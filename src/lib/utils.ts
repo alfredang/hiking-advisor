@@ -78,7 +78,7 @@ export function calculateSuitability(weather: Weather): HikingSuitability {
     weather.temperature < WEATHER_THRESHOLDS.temperature.caution_low ||
     weather.temperature > WEATHER_THRESHOLDS.temperature.caution_high
   ) {
-    if (status !== 'unsafe') status = 'caution';
+    status = 'caution';
     reasons.push(
       weather.temperature < WEATHER_THRESHOLDS.temperature.caution_low
         ? 'Cold temperatures - dress warmly'
@@ -90,8 +90,8 @@ export function calculateSuitability(weather: Weather): HikingSuitability {
   if (weather.windSpeed > WEATHER_THRESHOLDS.wind.unsafe) {
     status = 'unsafe';
     reasons.push('Dangerous wind conditions');
-  } else if (weather.windSpeed > WEATHER_THRESHOLDS.wind.caution) {
-    if (status !== 'unsafe') status = 'caution';
+  } else if (weather.windSpeed > WEATHER_THRESHOLDS.wind.caution && status !== 'unsafe') {
+    status = 'caution';
     reasons.push('Strong winds expected');
   }
 
@@ -99,8 +99,8 @@ export function calculateSuitability(weather: Weather): HikingSuitability {
   if (weather.rainProbability > WEATHER_THRESHOLDS.rain.unsafe) {
     status = 'unsafe';
     reasons.push('High chance of heavy rain');
-  } else if (weather.rainProbability > WEATHER_THRESHOLDS.rain.caution) {
-    if (status !== 'unsafe') status = 'caution';
+  } else if (weather.rainProbability > WEATHER_THRESHOLDS.rain.caution && status !== 'unsafe') {
+    status = 'caution';
     reasons.push('Chance of rain - bring rain gear');
   }
 
