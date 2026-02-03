@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { Trail, Weather, HikingSuitability } from '@/types';
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 interface ChatRequest {
   messages: { role: 'user' | 'assistant'; content: string }[];
@@ -19,20 +19,31 @@ export async function POST(request: NextRequest) {
     // Build system message with context
     const systemMessage = buildSystemMessage(trailContext, weatherContext, suitabilityContext);
 
-    if (OPENAI_API_KEY) {
-      const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+    if (GEMINI_API_KEY) {
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
 
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: systemMessage },
-          ...messages,
-        ],
-        max_tokens: 500,
-        temperature: 0.7,
+      // Build conversation history for Gemini
+      const chatHistory = messages.slice(0, -1).map((msg) => ({
+        role: msg.role === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.content }],
+      }));
+
+      const chat = model.startChat({
+        history: chatHistory,
+        generationConfig: {
+          maxOutputTokens: 500,
+          temperature: 0.7,
+        },
       });
 
-      const responseMessage = completion.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
+      const lastMessage = messages[messages.length - 1]?.content || '';
+      const prompt = chatHistory.length === 0
+        ? `${systemMessage}\n\nUser: ${lastMessage}`
+        : lastMessage;
+
+      const result = await chat.sendMessage(prompt);
+      const responseMessage = result.response.text() || 'Sorry, I could not generate a response.';
 
       return NextResponse.json({ message: responseMessage });
     }

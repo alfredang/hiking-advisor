@@ -143,12 +143,13 @@ export function MapContainer() {
             onMouseOver={() => setHoveredTrail(trail)}
             onMouseOut={() => setHoveredTrail(null)}
             icon={{
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: selectedTrail?.id === trail.id ? 12 : 8,
-              fillColor: getDifficultyColor(trail.stats.difficulty),
-              fillOpacity: selectedTrail?.id === trail.id ? 1 : 0.8,
-              strokeColor: '#ffffff',
-              strokeWeight: selectedTrail?.id === trail.id ? 3 : 2,
+              path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+              scale: selectedTrail?.id === trail.id ? 1.5 : 1.2,
+              fillColor: '#EA4335',
+              fillOpacity: 1,
+              strokeColor: '#B31412',
+              strokeWeight: 1,
+              anchor: new google.maps.Point(0, 0),
             }}
           />
         ))}
