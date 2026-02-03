@@ -436,6 +436,261 @@ export const mockTrails: Trail[] = [
     rating: 4.6,
     reviewCount: 2345,
   },
+  // Malaysian Trails
+  {
+    id: '11',
+    name: 'Mount Kinabalu',
+    description:
+      'Southeast Asia\'s highest peak at 4,095m. A UNESCO World Heritage Site with incredible biodiversity. The challenging 2-day climb rewards hikers with stunning sunrise views above the clouds.',
+    location: {
+      city: 'Ranau',
+      state: 'Sabah',
+      country: 'Malaysia',
+      coordinates: { lat: 6.0753, lng: 116.5584 },
+    },
+    stats: {
+      distance: 17,
+      elevationGain: 2200,
+      estimatedTime: 1440,
+      difficulty: 'hard',
+      trailType: 'out-and-back',
+    },
+    facilities: {
+      parking: true,
+      toilets: true,
+      waterPoints: true,
+      campsites: true,
+    },
+    safetyNotes: [
+      'Permit required - book months in advance',
+      'Mandatory guide required',
+      'Altitude sickness possible above 3000m',
+      'Best climbed March-April or Sept-Oct',
+    ],
+    path: [
+      { lat: 6.0322, lng: 116.5389 },
+      { lat: 6.0542, lng: 116.5486 },
+      { lat: 6.0753, lng: 116.5584 },
+    ],
+    images: [
+      getTrailImage(11, 'kinabalu-summit'),
+      getTrailImage(11, 'kinabalu-trail'),
+    ],
+    rating: 4.9,
+    reviewCount: 8765,
+  },
+  {
+    id: '12',
+    name: 'Bukit Broga',
+    description:
+      'A popular sunrise hike near Kuala Lumpur. Three peaks offer panoramic views of oil palm plantations and the surrounding countryside. Perfect for beginners and photography enthusiasts.',
+    location: {
+      city: 'Semenyih',
+      state: 'Selangor',
+      country: 'Malaysia',
+      coordinates: { lat: 2.9389, lng: 101.9031 },
+    },
+    stats: {
+      distance: 3,
+      elevationGain: 300,
+      estimatedTime: 90,
+      difficulty: 'easy',
+      trailType: 'out-and-back',
+    },
+    facilities: {
+      parking: true,
+      toilets: true,
+      waterPoints: false,
+      campsites: false,
+    },
+    safetyNotes: [
+      'Start early (5am) for sunrise views',
+      'Trail can be slippery when wet',
+      'Bring torchlight for early morning hikes',
+      'RM3 entrance fee',
+    ],
+    path: [
+      { lat: 2.9356, lng: 101.9012 },
+      { lat: 2.9372, lng: 101.9022 },
+      { lat: 2.9389, lng: 101.9031 },
+    ],
+    images: [
+      getTrailImage(12, 'broga-sunrise'),
+      getTrailImage(12, 'broga-hills'),
+    ],
+    rating: 4.5,
+    reviewCount: 5432,
+  },
+  {
+    id: '13',
+    name: 'Taman Negara Canopy Walk',
+    description:
+      'One of the world\'s oldest rainforests (130 million years). The 530m canopy walkway is the longest in the world, suspended 40m above ground. Home to tigers, elephants, and rare wildlife.',
+    location: {
+      city: 'Kuala Tahan',
+      state: 'Pahang',
+      country: 'Malaysia',
+      coordinates: { lat: 4.3833, lng: 102.4167 },
+    },
+    stats: {
+      distance: 9,
+      elevationGain: 150,
+      estimatedTime: 240,
+      difficulty: 'moderate',
+      trailType: 'loop',
+    },
+    facilities: {
+      parking: true,
+      toilets: true,
+      waterPoints: true,
+      campsites: true,
+    },
+    safetyNotes: [
+      'Canopy walkway opens 9am-3pm (Fri 9am-12pm)',
+      'Book night jungle walks in advance',
+      'Leech socks recommended during wet season',
+      'Boat ride required to reach park',
+    ],
+    path: [
+      { lat: 4.3812, lng: 102.4145 },
+      { lat: 4.3833, lng: 102.4167 },
+      { lat: 4.3856, lng: 102.4189 },
+      { lat: 4.3812, lng: 102.4145 },
+    ],
+    images: [
+      getTrailImage(13, 'taman-negara-canopy'),
+      getTrailImage(13, 'taman-negara-jungle'),
+    ],
+    rating: 4.7,
+    reviewCount: 3456,
+  },
+  {
+    id: '14',
+    name: 'Gunung Ledang (Mount Ophir)',
+    description:
+      'A mystical mountain steeped in legend, standing at 1,276m. Popular with hikers seeking a challenging overnight trek. Known for its beautiful waterfalls and diverse flora.',
+    location: {
+      city: 'Tangkak',
+      state: 'Johor',
+      country: 'Malaysia',
+      coordinates: { lat: 2.3589, lng: 102.6203 },
+    },
+    stats: {
+      distance: 12,
+      elevationGain: 1000,
+      estimatedTime: 600,
+      difficulty: 'hard',
+      trailType: 'out-and-back',
+    },
+    facilities: {
+      parking: true,
+      toilets: true,
+      waterPoints: true,
+      campsites: true,
+    },
+    safetyNotes: [
+      'Register at park office before hiking',
+      'Camping permit required for overnight stays',
+      'Rope sections near summit - bring gloves',
+      'Best during dry season (March-October)',
+    ],
+    path: [
+      { lat: 2.3512, lng: 102.6156 },
+      { lat: 2.3551, lng: 102.6178 },
+      { lat: 2.3589, lng: 102.6203 },
+    ],
+    images: [
+      getTrailImage(14, 'ledang-waterfall'),
+      getTrailImage(14, 'ledang-summit'),
+    ],
+    rating: 4.6,
+    reviewCount: 2187,
+  },
+  {
+    id: '15',
+    name: 'Penang Hill Trail',
+    description:
+      'A heritage trail to the top of Penang Hill (821m). Multiple routes available from easy to challenging. Offers cool weather and panoramic views of George Town and the mainland.',
+    location: {
+      city: 'George Town',
+      state: 'Penang',
+      country: 'Malaysia',
+      coordinates: { lat: 5.4234, lng: 100.2678 },
+    },
+    stats: {
+      distance: 5.5,
+      elevationGain: 700,
+      estimatedTime: 180,
+      difficulty: 'moderate',
+      trailType: 'out-and-back',
+    },
+    facilities: {
+      parking: true,
+      toilets: true,
+      waterPoints: true,
+      campsites: false,
+    },
+    safetyNotes: [
+      'Can take funicular railway up or down',
+      'Multiple trail routes - Jeep Track easiest',
+      'Bring warm clothing - cooler at summit',
+      'Monkeys present - secure food',
+    ],
+    path: [
+      { lat: 5.4156, lng: 100.2623 },
+      { lat: 5.4195, lng: 100.2651 },
+      { lat: 5.4234, lng: 100.2678 },
+    ],
+    images: [
+      getTrailImage(15, 'penang-hill-view'),
+      getTrailImage(15, 'penang-hill-trail'),
+    ],
+    rating: 4.4,
+    reviewCount: 4321,
+  },
+  {
+    id: '16',
+    name: 'Cameron Highlands Mossy Forest',
+    description:
+      'A mystical cloud forest at 2,000m elevation. The boardwalk trail winds through moss-covered trees and unique montane vegetation. One of Malaysia\'s most unique ecosystems.',
+    location: {
+      city: 'Brinchang',
+      state: 'Pahang',
+      country: 'Malaysia',
+      coordinates: { lat: 4.5189, lng: 101.3867 },
+    },
+    stats: {
+      distance: 2,
+      elevationGain: 100,
+      estimatedTime: 60,
+      difficulty: 'easy',
+      trailType: 'loop',
+    },
+    facilities: {
+      parking: true,
+      toilets: false,
+      waterPoints: false,
+      campsites: false,
+    },
+    safetyNotes: [
+      'Guide recommended - easy to get lost',
+      'Wear layers - cool and damp',
+      'Trail can be muddy - wear proper shoes',
+      'Best visited early morning for mist',
+    ],
+    path: [
+      { lat: 4.5178, lng: 101.3856 },
+      { lat: 4.5189, lng: 101.3867 },
+      { lat: 4.5195, lng: 101.3878 },
+      { lat: 4.5178, lng: 101.3856 },
+    ],
+    images: [
+      getTrailImage(16, 'mossy-forest'),
+      getTrailImage(16, 'cameron-highlands'),
+    ],
+    rating: 4.5,
+    reviewCount: 2876,
+  },
 ];
 
 // Helper function to get trail by ID
