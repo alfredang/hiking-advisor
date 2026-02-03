@@ -1,6 +1,6 @@
 // Map constants
-export const DEFAULT_MAP_CENTER = { lat: 39.8283, lng: -98.5795 }; // Center of USA
-export const DEFAULT_MAP_ZOOM = 4;
+export const DEFAULT_MAP_CENTER = { lat: 1.3521, lng: 103.8198 }; // Singapore
+export const DEFAULT_MAP_ZOOM = 11;
 export const SELECTED_TRAIL_ZOOM = 12;
 
 // Difficulty colors and labels
