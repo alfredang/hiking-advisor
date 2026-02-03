@@ -1,5 +1,10 @@
 import { Trail } from '@/types';
 
+// Using picsum.photos for reliable placeholder images with Singapore trail themes
+// In production, these would be replaced with actual trail photos from a CDN
+const getTrailImage = (_id: number, seed: string) =>
+  `https://picsum.photos/seed/${seed}/800/600`;
+
 export const mockTrails: Trail[] = [
   {
     id: '1',
@@ -39,8 +44,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.3412, lng: 103.8332 },
     ],
     images: [
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9b/TreeTopWalk.JPG/1280px-TreeTopWalk.JPG',
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/MacRitchie_Reservoir_6%2C_Nov_06.JPG/1280px-MacRitchie_Reservoir_6%2C_Nov_06.JPG',
+      getTrailImage(1, 'macritchie-forest'),
+      getTrailImage(1, 'macritchie-bridge'),
     ],
     rating: 4.8,
     reviewCount: 3542,
@@ -81,8 +86,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.3547, lng: 103.7765 },
     ],
     images: [
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Bukit_Timah_Nature_Reserve.jpg/1280px-Bukit_Timah_Nature_Reserve.jpg',
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Bukit_Timah_Hill_Summit.jpg/1280px-Bukit_Timah_Hill_Summit.jpg',
+      getTrailImage(2, 'bukittimah-jungle'),
+      getTrailImage(2, 'bukittimah-summit'),
     ],
     rating: 4.7,
     reviewCount: 2876,
@@ -124,8 +129,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.2842, lng: 103.8012 },
     ],
     images: [
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Henderson_Waves_4%2C_Nov_06.JPG/1280px-Henderson_Waves_4%2C_Nov_06.JPG',
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/The_Southern_Ridges%2C_Singapore_-_20110506-01.jpg/1280px-The_Southern_Ridges%2C_Singapore_-_20110506-01.jpg',
+      getTrailImage(3, 'henderson-waves'),
+      getTrailImage(3, 'southern-ridges-view'),
     ],
     rating: 4.9,
     reviewCount: 4123,
@@ -167,8 +172,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.4087, lng: 103.9678 },
     ],
     images: [
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Chek_Jawa_Wetlands_Boardwalk.jpg/1280px-Chek_Jawa_Wetlands_Boardwalk.jpg',
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Pulau_Ubin_-_panoramio_%281%29.jpg/1280px-Pulau_Ubin_-_panoramio_%281%29.jpg',
+      getTrailImage(4, 'chekjawa-boardwalk'),
+      getTrailImage(4, 'pulau-ubin-nature'),
     ],
     rating: 4.6,
     reviewCount: 1892,
@@ -210,8 +215,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.4312, lng: 103.7689 },
     ],
     images: [
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Rail_Corridor_%28Central%29_-_Singapore_%2850067879908%29.jpg/1280px-Rail_Corridor_%28Central%29_-_Singapore_%2850067879908%29.jpg',
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Rail_Corridor_%28North%29_5%2C_Singapore%2C_Dec_05.JPG/1280px-Rail_Corridor_%28North%29_5%2C_Singapore%2C_Dec_05.JPG',
+      getTrailImage(5, 'rail-corridor-green'),
+      getTrailImage(5, 'rail-corridor-bridge'),
     ],
     rating: 4.5,
     reviewCount: 2341,
@@ -253,8 +258,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.4456, lng: 103.7312 },
     ],
     images: [
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Sungei_Buloh_Wetland_Reserve_1.jpg/1280px-Sungei_Buloh_Wetland_Reserve_1.jpg',
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Sungei_Buloh.jpg/1280px-Sungei_Buloh.jpg',
+      getTrailImage(6, 'sungei-buloh-wetland'),
+      getTrailImage(6, 'sungei-buloh-birds'),
     ],
     rating: 4.4,
     reviewCount: 1654,
@@ -296,8 +301,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.4123, lng: 103.9145 },
     ],
     images: [
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Coney_Island_Park_Singapore_beach.jpg/1280px-Coney_Island_Park_Singapore_beach.jpg',
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Punggol_Waterway_Park%2C_Singapore_-_20130302.jpg/1280px-Punggol_Waterway_Park%2C_Singapore_-_20130302.jpg',
+      getTrailImage(7, 'coney-island-beach'),
+      getTrailImage(7, 'coney-island-path'),
     ],
     rating: 4.5,
     reviewCount: 1234,
@@ -339,8 +344,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.3756, lng: 103.7798 },
     ],
     images: [
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Bukit_Timah_Nature_Reserve.jpg/1280px-Bukit_Timah_Nature_Reserve.jpg',
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Chestnut_Avenue_4%2C_Nov_06.JPG/1280px-Chestnut_Avenue_4%2C_Nov_06.JPG',
+      getTrailImage(8, 'chestnut-nature-trail'),
+      getTrailImage(8, 'chestnut-forest'),
     ],
     rating: 4.3,
     reviewCount: 987,
@@ -382,8 +387,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.2656, lng: 103.8034 },
     ],
     images: [
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Labrador_Park_2%2C_Nov_06.JPG/1280px-Labrador_Park_2%2C_Nov_06.JPG',
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Labrador_Park_7%2C_Nov_06.JPG/1280px-Labrador_Park_7%2C_Nov_06.JPG',
+      getTrailImage(9, 'labrador-coastal'),
+      getTrailImage(9, 'labrador-nature'),
     ],
     rating: 4.4,
     reviewCount: 876,
@@ -425,8 +430,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.2934, lng: 103.8445 },
     ],
     images: [
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Fort_Canning_Park_5%2C_Singapore%2C_Jan_07.JPG/1280px-Fort_Canning_Park_5%2C_Singapore%2C_Jan_07.JPG',
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Fort_Canning_Tunnel.jpg/1280px-Fort_Canning_Tunnel.jpg',
+      getTrailImage(10, 'fort-canning-garden'),
+      getTrailImage(10, 'fort-canning-stairs'),
     ],
     rating: 4.6,
     reviewCount: 2345,
