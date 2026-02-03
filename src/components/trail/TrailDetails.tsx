@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
-import { MapPin, Clock, TrendingUp, Star, Heart, AlertTriangle, Share2, Navigation } from 'lucide-react';
+import { MapPin, Star, Heart, AlertTriangle, Share2, Navigation } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistance, formatDuration, formatElevation, formatRating } from '@/lib/utils';
 import { Button, Badge } from '@/components/ui';
@@ -13,7 +12,7 @@ import { ImageGallery } from '@/components/media/ImageGallery';
 import { RecommendedTrails } from '@/components/recommendations/RecommendedTrails';
 import { useStore } from '@/store/useStore';
 import { TRAIL_TYPE_LABELS } from '@/lib/constants';
-import type { Trail, Weather, HikingSuitability } from '@/types';
+import type { Trail } from '@/types';
 
 interface TrailDetailsProps {
   trail: Trail;
@@ -23,6 +22,28 @@ export function TrailDetails({ trail }: TrailDetailsProps) {
   const { useImperialUnits, toggleFavorite, isFavorite, setTrailWeather, setTrailSuitability, trailWeather, trailSuitability } = useStore();
   const isFav = isFavorite(trail.id);
   const [isLoadingWeather, setIsLoadingWeather] = useState(false);
+  const [trailImages, setTrailImages] = useState<string[]>(trail.images);
+
+  // Fetch images from Google Places when trail changes
+  useEffect(() => {
+    const fetchImages = async () => {
+      try {
+        const response = await fetch(
+          `/api/images?query=${encodeURIComponent(trail.name + ' Singapore')}&count=5`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.images && data.images.length > 0) {
+            setTrailImages(data.images);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch images:', error);
+      }
+    };
+
+    fetchImages();
+  }, [trail.id, trail.name]);
 
   // Fetch weather when trail changes
   useEffect(() => {
@@ -74,12 +95,11 @@ export function TrailDetails({ trail }: TrailDetailsProps) {
     <div className="space-y-6 pb-6">
       {/* Hero image */}
       <div className="relative h-56 -mx-4 -mt-4">
-        <Image
-          src={trail.images[0] || '/placeholder-trail.jpg'}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={trailImages[0] || '/placeholder-trail.jpg'}
           alt={trail.name}
-          fill
-          className="object-cover"
-          priority
+          className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <div className="absolute bottom-4 left-4 right-4">
@@ -189,10 +209,10 @@ export function TrailDetails({ trail }: TrailDetailsProps) {
         )}
 
         {/* Image gallery */}
-        {trail.images.length > 1 && (
+        {trailImages.length > 1 && (
           <div>
             <h2 className="font-semibold text-gray-900 mb-3">Photos</h2>
-            <ImageGallery images={trail.images} trailName={trail.name} />
+            <ImageGallery images={trailImages} trailName={trail.name} />
           </div>
         )}
 
