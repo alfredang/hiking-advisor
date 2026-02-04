@@ -4,20 +4,29 @@ import { useState } from 'react';
 import { Search, MapPin, X, Loader2 } from 'lucide-react';
 import { Input, Button } from '@/components/ui';
 import { useStore } from '@/store/useStore';
-import { mockTrails, searchTrails, getNearbyTrails } from '@/data/mockTrails';
+import { mockTrails, getNearbyTrails } from '@/data/mockTrails';
 
 export function SearchBar() {
   const { searchQuery, setSearchQuery, setSearchResults, setMapCenter, setUserLocation, setIsSearching, isSearching } =
     useStore();
   const [localQuery, setLocalQuery] = useState(searchQuery);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     setSearchQuery(localQuery);
     if (localQuery.trim()) {
-      const results = searchTrails(localQuery);
-      setSearchResults(results);
-      if (results.length > 0) {
-        setMapCenter(results[0].location.coordinates);
+      setIsSearching(true);
+      try {
+        const response = await fetch(`/api/trails?q=${encodeURIComponent(localQuery)}`);
+        const data = await response.json();
+        setSearchResults(data.trails || []);
+        if (data.trails?.length > 0) {
+          setMapCenter(data.trails[0].location.coordinates);
+        }
+      } catch (error) {
+        console.error('Search failed:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
       }
     } else {
       setSearchResults(mockTrails);
@@ -26,7 +35,7 @@ export function SearchBar() {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleSearch();
+      void handleSearch();
     }
   };
 
@@ -87,10 +96,11 @@ export function SearchBar() {
         )}
         <Button
           size="sm"
-          onClick={handleSearch}
+          onClick={() => void handleSearch()}
+          disabled={isSearching}
           className="absolute right-1 top-1/2 -translate-y-1/2 h-8"
         >
-          Search
+          {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Search'}
         </Button>
       </div>
 
