@@ -1,36 +1,58 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, MapPin, X, Loader2 } from 'lucide-react';
 import { Input, Button } from '@/components/ui';
 import { useStore } from '@/store/useStore';
-import { mockTrails, getNearbyTrails } from '@/data/mockTrails';
 
 export function SearchBar() {
   const { searchQuery, setSearchQuery, setSearchResults, setMapCenter, setUserLocation, setIsSearching, isSearching } =
     useStore();
   const [localQuery, setLocalQuery] = useState(searchQuery);
+  const [hasLoadedInitial, setHasLoadedInitial] = useState(false);
+
+  // Load default trails on initial mount
+  useEffect(() => {
+    if (!hasLoadedInitial) {
+      setHasLoadedInitial(true);
+      void fetchTrails();
+    }
+  }, [hasLoadedInitial]);
+
+  const fetchTrails = async (query?: string, lat?: number, lng?: number) => {
+    setIsSearching(true);
+    try {
+      let url = '/api/trails';
+      const params = new URLSearchParams();
+
+      if (query) {
+        params.set('q', query);
+      } else if (lat !== undefined && lng !== undefined) {
+        params.set('lat', lat.toString());
+        params.set('lng', lng.toString());
+      }
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url);
+      const data = await response.json();
+      setSearchResults(data.trails || []);
+      if (data.trails?.length > 0) {
+        setMapCenter(data.trails[0].location.coordinates);
+      }
+    } catch (error) {
+      console.error('Failed to fetch trails:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const handleSearch = async () => {
     setSearchQuery(localQuery);
-    if (localQuery.trim()) {
-      setIsSearching(true);
-      try {
-        const response = await fetch(`/api/trails?q=${encodeURIComponent(localQuery)}`);
-        const data = await response.json();
-        setSearchResults(data.trails || []);
-        if (data.trails?.length > 0) {
-          setMapCenter(data.trails[0].location.coordinates);
-        }
-      } catch (error) {
-        console.error('Search failed:', error);
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    } else {
-      setSearchResults(mockTrails);
-    }
+    await fetchTrails(localQuery.trim() || undefined);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -39,10 +61,10 @@ export function SearchBar() {
     }
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
     setLocalQuery('');
     setSearchQuery('');
-    setSearchResults(mockTrails);
+    await fetchTrails();
   };
 
   const handleUseLocation = async () => {
@@ -54,17 +76,15 @@ export function SearchBar() {
     setIsSearching(true);
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords;
         setUserLocation({ lat: latitude, lng: longitude });
         setMapCenter({ lat: latitude, lng: longitude });
 
-        // Find nearby trails
-        const nearbyTrails = getNearbyTrails(latitude, longitude, 500);
-        setSearchResults(nearbyTrails.length > 0 ? nearbyTrails : mockTrails);
+        // Fetch nearby trails from API
+        await fetchTrails(undefined, latitude, longitude);
         setLocalQuery('Near me');
         setSearchQuery('Near me');
-        setIsSearching(false);
       },
       (error) => {
         console.error('Error getting location:', error);

@@ -9,7 +9,7 @@ const getPlacePhotoUrl = (query: string, cacheKey?: string) => {
   if (cacheKey) {
     params.set('cacheKey', cacheKey);
   }
-  params.set('v', '3');
+  params.set('v', '4');
   return `/api/place-photo?${params.toString()}`;
 };
 

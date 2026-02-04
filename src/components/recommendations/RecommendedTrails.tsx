@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
-import { mockTrails } from '@/data/mockTrails';
 import { TrailCard } from '@/components/trail/TrailCard';
 import { useStore } from '@/store/useStore';
 import type { Trail } from '@/types';
@@ -12,11 +11,11 @@ interface RecommendedTrailsProps {
 }
 
 export function RecommendedTrails({ currentTrail }: RecommendedTrailsProps) {
-  const { selectTrail, setMapCenter, setActiveView, trailSuitability } = useStore();
+  const { selectTrail, setMapCenter, setActiveView, trailSuitability, searchResults } = useStore();
 
   const recommendations = useMemo(() => {
-    // Filter out current trail and find similar ones
-    const otherTrails = mockTrails.filter((t) => t.id !== currentTrail.id);
+    // Filter out current trail and find similar ones from search results
+    const otherTrails = searchResults.filter((t) => t.id !== currentTrail.id);
 
     // Score trails based on similarity
     const scored = otherTrails.map((trail) => {
@@ -64,7 +63,7 @@ export function RecommendedTrails({ currentTrail }: RecommendedTrailsProps) {
       .sort((a, b) => b.score - a.score)
       .slice(0, 3)
       .map((s) => s.trail);
-  }, [currentTrail, trailSuitability]);
+  }, [currentTrail, trailSuitability, searchResults]);
 
   const handleTrailClick = (trail: Trail) => {
     selectTrail(trail);

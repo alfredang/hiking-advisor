@@ -1,38 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-const GOOGLE_SEARCH_ENGINE_ID = process.env.GOOGLE_SEARCH_ENGINE_ID;
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-interface SearchResult {
-  link: string;
-  image: {
-    contextLink: string;
-    height: number;
-    width: number;
-  };
+interface PlacePhoto {
+  photo_reference: string;
+  height: number;
+  width: number;
 }
 
-interface CustomSearchResponse {
-  items?: SearchResult[];
-  error?: {
-    message: string;
-  };
+interface PlaceResult {
+  photos?: PlacePhoto[];
+  name: string;
+  place_id: string;
 }
 
-// Cache for image URLs to avoid repeated API calls
-const imageCache = new Map<string, { url: string; expires: number }>();
+interface PlacesResponse {
+  results: PlaceResult[];
+  status: string;
+}
+
+// Cache for photo references
+const photoRefCache = new Map<string, { ref: string; expires: number }>();
 const CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours
-
-// Generate a consistent seed from a string for reproducible "random" images
-function hashCode(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return Math.abs(hash);
-}
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -43,87 +32,91 @@ export async function GET(request: NextRequest) {
     return new NextResponse('Missing query parameter', { status: 400 });
   }
 
-  try {
-    // Use both query and cacheKey for cache lookup
-    const fullCacheKey = `${query.toLowerCase()}-${cacheKey}`;
-    const cached = imageCache.get(fullCacheKey);
+  if (!GOOGLE_MAPS_API_KEY) {
+    console.error('Google Maps API key not configured');
+    return new NextResponse('API not configured', { status: 500 });
+  }
 
-    let imageUrl: string | null = null;
+  try {
+    const fullCacheKey = `${query.toLowerCase()}-${cacheKey}`;
+    const cached = photoRefCache.get(fullCacheKey);
+
+    let photoRef: string | null = null;
 
     if (cached && cached.expires > Date.now()) {
-      imageUrl = cached.url;
-    } else if (GOOGLE_API_KEY && GOOGLE_SEARCH_ENGINE_ID) {
-      // Use Google Custom Search API for images
-      const searchQuery = `${query} hiking trail nature scenery`;
-      const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_SEARCH_ENGINE_ID}&q=${encodeURIComponent(searchQuery)}&searchType=image&imgSize=large&imgType=photo&num=3&safe=active`;
+      photoRef = cached.ref;
+    } else {
+      // Search for the place using Google Places Text Search
+      const searchResponse = await fetch(
+        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}`
+      );
 
-      console.log('Searching Google Custom Search for:', searchQuery);
+      if (!searchResponse.ok) {
+        throw new Error('Failed to search places');
+      }
 
-      const response = await fetch(searchUrl);
-      const data: CustomSearchResponse = await response.json();
+      const searchData: PlacesResponse = await searchResponse.json();
 
-      if (data.error) {
-        console.error('Google Custom Search error:', data.error.message);
-      } else if (data.items && data.items.length > 0) {
-        // Find a landscape-oriented image
-        const landscapeImage = data.items.find(
-          (item) => item.image.width > item.image.height
-        );
-        imageUrl = landscapeImage?.link || data.items[0].link;
+      if (searchData.status === 'OK' && searchData.results.length > 0) {
+        // Find a result with photos, preferring landscape-oriented photos
+        for (const place of searchData.results) {
+          if (place.photos && place.photos.length > 0) {
+            // Try to find a landscape photo
+            const landscapePhoto = place.photos.find(p => p.width > p.height);
+            photoRef = landscapePhoto?.photo_reference || place.photos[0].photo_reference;
 
-        // Cache the result
-        imageCache.set(fullCacheKey, {
-          url: imageUrl,
-          expires: Date.now() + CACHE_TTL,
-        });
-
-        console.log('Found Google image:', imageUrl);
+            // Cache the photo reference
+            photoRefCache.set(fullCacheKey, {
+              ref: photoRef,
+              expires: Date.now() + CACHE_TTL,
+            });
+            break;
+          }
+        }
       }
     }
 
-    // Fallback to picsum.photos (reliable placeholder service)
-    if (!imageUrl) {
-      // Use hash of query+cacheKey for consistent but different images per trail
-      const seed = hashCode(fullCacheKey);
-      imageUrl = `https://picsum.photos/seed/${seed}/800/500`;
-      console.log('Using picsum fallback with seed:', seed);
+    if (!photoRef) {
+      // Return a placeholder image from picsum
+      const seed = Math.abs(hashCode(fullCacheKey));
+      const placeholderUrl = `https://picsum.photos/seed/${seed}/800/500`;
+      const placeholderResponse = await fetch(placeholderUrl, { redirect: 'follow' });
 
-      imageCache.set(fullCacheKey, {
-        url: imageUrl,
-        expires: Date.now() + CACHE_TTL,
-      });
+      if (placeholderResponse.ok) {
+        const imageBuffer = await placeholderResponse.arrayBuffer();
+        return new NextResponse(imageBuffer, {
+          headers: {
+            'Content-Type': 'image/jpeg',
+            'Cache-Control': 'public, max-age=86400',
+          },
+        });
+      }
+      return new NextResponse('No photo found', { status: 404 });
     }
 
-    // Fetch and proxy the image
-    const imageResponse = await fetch(imageUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; TrailFinder/1.0)',
-        'Accept': 'image/*',
-      },
-      redirect: 'follow',
-    });
+    // Fetch the actual photo from Google Places Photo API
+    const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoRef}&key=${GOOGLE_MAPS_API_KEY}`;
+    const photoResponse = await fetch(photoUrl);
 
-    if (!imageResponse.ok) {
-      console.error('Failed to fetch image from:', imageUrl, 'Status:', imageResponse.status);
-      throw new Error('Failed to fetch image');
+    if (!photoResponse.ok) {
+      throw new Error('Failed to fetch photo');
     }
 
-    const imageBuffer = await imageResponse.arrayBuffer();
-    const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+    const imageBuffer = await photoResponse.arrayBuffer();
+    const contentType = photoResponse.headers.get('content-type') || 'image/jpeg';
 
     return new NextResponse(imageBuffer, {
       headers: {
         'Content-Type': contentType,
         'Cache-Control': 'public, max-age=86400, s-maxage=86400',
-        'X-Image-Source': GOOGLE_SEARCH_ENGINE_ID && imageUrl.includes('google') ? 'google' : 'picsum',
       },
     });
   } catch (error) {
-    console.error('Error fetching image:', error);
+    console.error('Error fetching place photo:', error);
 
-    // Final fallback - use picsum with timestamp
+    // Fallback to picsum
     try {
-      const seed = hashCode(query + cacheKey + 'fallback');
+      const seed = Math.abs(hashCode(query + cacheKey));
       const fallbackUrl = `https://picsum.photos/seed/${seed}/800/500`;
       const fallbackResponse = await fetch(fallbackUrl, { redirect: 'follow' });
 
@@ -133,14 +126,23 @@ export async function GET(request: NextRequest) {
           headers: {
             'Content-Type': 'image/jpeg',
             'Cache-Control': 'public, max-age=3600',
-            'X-Image-Source': 'fallback',
           },
         });
       }
     } catch {
-      // Ignore fallback errors
+      // Ignore
     }
 
-    return new NextResponse('Failed to fetch image', { status: 500 });
+    return new NextResponse('Failed to fetch photo', { status: 500 });
   }
+}
+
+function hashCode(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return hash;
 }

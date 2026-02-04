@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { GoogleMap, useJsApiLoader, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 import { Loader2 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { mockTrails } from '@/data/mockTrails';
 import { TrailMarker } from './TrailMarker';
 import { MapControls } from './MapControls';
 import { DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, SELECTED_TRAIL_ZOOM, DIFFICULTY_CONFIG } from '@/lib/constants';
@@ -55,7 +54,8 @@ export function MapContainer() {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [hoveredTrail, setHoveredTrail] = useState<Trail | null>(null);
 
-  const trails = searchResults.length > 0 ? searchResults : mockTrails;
+  // Use search results directly - no mock data fallback
+  const trails = searchResults;
 
   const onLoad = useCallback((map: google.maps.Map) => {
     setMap(map);

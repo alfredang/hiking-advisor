@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTrailById } from '@/data/mockTrails';
 
 export async function GET(
   request: NextRequest,
@@ -7,22 +6,16 @@ export async function GET(
 ) {
   const { id } = params;
 
-  try {
-    const trail = getTrailById(id);
+  // With fully dynamic data from Google Places API, individual trail lookup by ID
+  // is not supported. Trails are fetched dynamically via search or location.
+  // The frontend stores selected trail data in the client-side store.
 
-    if (!trail) {
-      return NextResponse.json(
-        { error: 'Trail not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(trail);
-  } catch (error) {
-    console.error('Error fetching trail:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch trail' },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    {
+      error: 'Trail lookup by ID not available',
+      message: 'Use /api/trails with search query or coordinates to find trails',
+      requestedId: id
+    },
+    { status: 404 }
+  );
 }
