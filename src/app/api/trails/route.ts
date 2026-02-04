@@ -30,8 +30,56 @@ interface PlacesResponse {
   status: string;
 }
 
+interface PlaceDetailsResponse {
+  result: {
+    photos?: PlacePhoto[];
+    formatted_address?: string;
+    address_components?: {
+      long_name: string;
+      short_name: string;
+      types: string[];
+    }[];
+  };
+  status: string;
+}
+
+// Extract zip/postal code from address components or formatted address
+function extractZipCode(address: string, addressComponents?: { long_name: string; types: string[] }[]): string {
+  // Try to get from address components first
+  if (addressComponents) {
+    const postalComponent = addressComponents.find(c => c.types.includes('postal_code'));
+    if (postalComponent) {
+      return postalComponent.long_name;
+    }
+  }
+
+  // Fallback: extract from formatted address using regex
+  // Matches common postal code formats (US: 12345, UK: SW1A 1AA, etc.)
+  const zipMatch = address.match(/\b\d{5}(-\d{4})?\b|\b[A-Z]{1,2}\d{1,2}[A-Z]?\s*\d[A-Z]{2}\b|\b\d{3}-\d{4}\b|\b\d{6}\b/i);
+  return zipMatch ? zipMatch[0] : '';
+}
+
+// Fetch detailed place info including more photos
+async function getPlaceDetails(placeId: string): Promise<PlacePhoto[]> {
+  if (!GOOGLE_MAPS_API_KEY) return [];
+
+  try {
+    const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=photos,address_components&key=${GOOGLE_MAPS_API_KEY}`;
+    const response = await fetch(detailsUrl);
+    const data: PlaceDetailsResponse = await response.json();
+
+    if (data.status === 'OK' && data.result.photos) {
+      return data.result.photos;
+    }
+  } catch (error) {
+    console.error('Error fetching place details:', error);
+  }
+
+  return [];
+}
+
 // Convert Google Places result to Trail format
-function placeToTrail(place: PlaceResult, index: number): Trail {
+async function placeToTrail(place: PlaceResult, index: number, detailedPhotos?: PlacePhoto[]): Promise<Trail> {
   const baseId = `place-${place.place_id.substring(0, 12)}`;
 
   // Estimate difficulty based on types
@@ -48,19 +96,30 @@ function placeToTrail(place: PlaceResult, index: number): Trail {
   const state = addressParts.length > 2 ? addressParts[addressParts.length - 2] : '';
   const city = addressParts.length > 3 ? addressParts[addressParts.length - 3] : addressParts[0] || '';
 
-  // Generate image URLs - use photo_reference from Places API if available
+  // Extract zip code for more accurate image search
+  const zipCode = extractZipCode(place.formatted_address);
+
+  // Use detailed photos if available (from Place Details API), otherwise use photos from search
+  const photos = detailedPhotos && detailedPhotos.length > 0 ? detailedPhotos : place.photos;
+
+  // Generate image URLs - use photo_reference from Places API
   const images: string[] = [];
-  if (place.photos && place.photos.length > 0) {
+  if (photos && photos.length > 0) {
     // Use actual Google Places photos for this specific place
-    for (let i = 0; i < Math.min(2, place.photos.length); i++) {
-      const photoRef = place.photos[i].photo_reference;
+    // Get up to 2 different photos from the available ones
+    const numPhotos = Math.min(2, photos.length);
+    for (let i = 0; i < numPhotos; i++) {
+      const photoRef = photos[i].photo_reference;
       images.push(`/api/place-photo?photoRef=${encodeURIComponent(photoRef)}&placeId=${place.place_id}&index=${i}`);
     }
   }
 
-  // If not enough photos, add fallback
+  // If not enough photos, use zip code + place name for more accurate fallback search
   while (images.length < 2) {
-    images.push(`/api/place-photo?query=${encodeURIComponent(place.name)}&placeId=${place.place_id}&index=${images.length}`);
+    const searchQuery = zipCode
+      ? `${place.name} ${zipCode} ${country}`
+      : `${place.name} ${city} ${country}`;
+    images.push(`/api/place-photo?query=${encodeURIComponent(searchQuery)}&placeId=${place.place_id}&index=${images.length}`);
   }
 
   return {
@@ -116,7 +175,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    let trails: Trail[] = [];
+    let places: PlaceResult[] = [];
 
     if (query) {
       // Search for hiking trails/parks in the specified location
@@ -127,7 +186,7 @@ export async function GET(request: NextRequest) {
       const data: PlacesResponse = await response.json();
 
       if (data.status === 'OK' && data.results.length > 0) {
-        trails = data.results.slice(0, 20).map((place, index) => placeToTrail(place, index));
+        places = data.results.slice(0, 20);
       }
     } else if (lat && lng) {
       // Search nearby trails
@@ -137,7 +196,7 @@ export async function GET(request: NextRequest) {
       const data: PlacesResponse = await response.json();
 
       if (data.status === 'OK' && data.results.length > 0) {
-        trails = data.results.slice(0, 20).map((place, index) => placeToTrail(place, index));
+        places = data.results.slice(0, 20);
       }
     } else {
       // Default: show popular hiking destinations
@@ -147,9 +206,24 @@ export async function GET(request: NextRequest) {
       const data: PlacesResponse = await response.json();
 
       if (data.status === 'OK' && data.results.length > 0) {
-        trails = data.results.slice(0, 20).map((place, index) => placeToTrail(place, index));
+        places = data.results.slice(0, 20);
       }
     }
+
+    // Fetch detailed photos for each place (in parallel for speed)
+    // Only fetch details for places that don't have enough photos
+    const trailPromises = places.map(async (place, index) => {
+      let detailedPhotos: PlacePhoto[] | undefined;
+
+      // If place doesn't have photos or only has 1, fetch more from Place Details
+      if (!place.photos || place.photos.length < 2) {
+        detailedPhotos = await getPlaceDetails(place.place_id);
+      }
+
+      return placeToTrail(place, index, detailedPhotos);
+    });
+
+    const trails = await Promise.all(trailPromises);
 
     return NextResponse.json({
       trails,
