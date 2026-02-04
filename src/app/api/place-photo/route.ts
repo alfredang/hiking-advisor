@@ -98,7 +98,9 @@ export async function GET(request: NextRequest) {
     return new NextResponse(imageBuffer, {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=86400, s-maxage=86400',
+        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+        'Vary': 'Accept-Encoding',
+        'X-Query': query.substring(0, 50),
       },
     });
   } catch (error) {

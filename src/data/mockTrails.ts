@@ -3,11 +3,13 @@ import { Trail } from '@/types';
 // Generate Google Places API photo URL for trail images
 // This endpoint proxies photos from Google Places API based on trail/location name
 // The cacheKey parameter ensures browser caching treats each trail's image as unique
+// The v parameter is for cache busting when images need to be refreshed
 const getPlacePhotoUrl = (query: string, cacheKey?: string) => {
   const params = new URLSearchParams({ query });
   if (cacheKey) {
     params.set('cacheKey', cacheKey);
   }
+  params.set('v', '2');
   return `/api/place-photo?${params.toString()}`;
 };
 
