@@ -79,7 +79,7 @@ async function getPlaceDetails(placeId: string): Promise<PlacePhoto[]> {
 }
 
 // Convert Google Places result to Trail format
-async function placeToTrail(place: PlaceResult, index: number, detailedPhotos?: PlacePhoto[]): Promise<Trail> {
+async function placeToTrail(place: PlaceResult, index: number, detailedPhotos?: PlacePhoto[], totalPlaces?: number): Promise<Trail> {
   const baseId = `place-${place.place_id.substring(0, 12)}`;
 
   // Estimate difficulty based on types
@@ -103,23 +103,29 @@ async function placeToTrail(place: PlaceResult, index: number, detailedPhotos?: 
   const photos = detailedPhotos && detailedPhotos.length > 0 ? detailedPhotos : place.photos;
 
   // Generate image URLs - use photo_reference from Places API
+  // IMPORTANT: Use different photos for each trail by offsetting based on trail index
   const images: string[] = [];
   if (photos && photos.length > 0) {
-    // Use actual Google Places photos for this specific place
-    // Get up to 2 different photos from the available ones
-    const numPhotos = Math.min(2, photos.length);
-    for (let i = 0; i < numPhotos; i++) {
-      const photoRef = photos[i].photo_reference;
-      images.push(`/api/place-photo?photoRef=${encodeURIComponent(photoRef)}&placeId=${place.place_id}&index=${i}`);
+    // Calculate starting offset based on trail index to ensure different photos per trail
+    // Each trail gets different photos from the array
+    const startOffset = (index * 2) % Math.max(1, photos.length);
+
+    for (let i = 0; i < 2; i++) {
+      // Pick different photo for each trail by using offset + i
+      const photoIndex = (startOffset + i) % photos.length;
+      const photoRef = photos[photoIndex].photo_reference;
+      // Include trail index in URL to ensure uniqueness
+      images.push(`/api/place-photo?photoRef=${encodeURIComponent(photoRef)}&placeId=${place.place_id}&trailIndex=${index}&photoIndex=${photoIndex}`);
     }
   }
 
   // If not enough photos, use zip code + place name for more accurate fallback search
+  // Add trail index to make each fallback unique
   while (images.length < 2) {
     const searchQuery = zipCode
       ? `${place.name} ${zipCode} ${country}`
       : `${place.name} ${city} ${country}`;
-    images.push(`/api/place-photo?query=${encodeURIComponent(searchQuery)}&placeId=${place.place_id}&index=${images.length}`);
+    images.push(`/api/place-photo?query=${encodeURIComponent(searchQuery)}&placeId=${place.place_id}&trailIndex=${index}&photoIndex=${images.length}`);
   }
 
   return {
@@ -199,8 +205,8 @@ export async function GET(request: NextRequest) {
         places = data.results.slice(0, 20);
       }
     } else {
-      // Default: show popular hiking destinations
-      const defaultUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=popular+hiking+trails+nature+reserve&key=${GOOGLE_MAPS_API_KEY}`;
+      // Default: show Singapore hiking trails and nature reserves
+      const defaultUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=hiking+trails+nature+reserve+Singapore&key=${GOOGLE_MAPS_API_KEY}`;
 
       const response = await fetch(defaultUrl);
       const data: PlacesResponse = await response.json();

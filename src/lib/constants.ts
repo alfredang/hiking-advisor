@@ -1,6 +1,6 @@
-// Map constants - centered between Singapore and Malaysia
-export const DEFAULT_MAP_CENTER = { lat: 2.5, lng: 103.5 }; // Between Singapore and Malaysia
-export const DEFAULT_MAP_ZOOM = 7;
+// Map constants - centered on Singapore
+export const DEFAULT_MAP_CENTER = { lat: 1.3521, lng: 103.8198 }; // Singapore
+export const DEFAULT_MAP_ZOOM = 11;
 export const SELECTED_TRAIL_ZOOM = 12;
 
 // Difficulty colors and labels

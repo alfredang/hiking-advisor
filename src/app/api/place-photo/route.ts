@@ -35,7 +35,8 @@ export async function GET(request: NextRequest) {
   const photoRef = searchParams.get('photoRef');
   const query = searchParams.get('query');
   const placeId = searchParams.get('placeId') || '';
-  const index = searchParams.get('index') || '0';
+  const trailIndex = searchParams.get('trailIndex') || '0';
+  const photoIndex = searchParams.get('photoIndex') || '0';
 
   if (!GOOGLE_MAPS_API_KEY) {
     console.error('Google Maps API key not configured');
@@ -73,12 +74,19 @@ export async function GET(request: NextRequest) {
         const searchData: PlacesResponse = await searchResponse.json();
 
         if (searchData.status === 'OK' && searchData.results.length > 0) {
-          // Find a result with photos
-          for (const place of searchData.results) {
+          // Use trail index to pick different places from results for variety
+          const trailIdx = parseInt(trailIndex, 10);
+          const placeOffset = trailIdx % searchData.results.length;
+
+          // Try places starting from the offset to get different results per trail
+          for (let i = 0; i < searchData.results.length; i++) {
+            const placeIdx = (placeOffset + i) % searchData.results.length;
+            const place = searchData.results[placeIdx];
+
             if (place.photos && place.photos.length > 0) {
-              // Use different photo based on index for variety
-              const photoIndex = parseInt(index, 10) % place.photos.length;
-              photoReference = place.photos[photoIndex].photo_reference;
+              // Use different photo based on photoIndex + trailIndex for variety
+              const photoIdx = (parseInt(photoIndex, 10) + trailIdx) % place.photos.length;
+              photoReference = place.photos[photoIdx].photo_reference;
 
               const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${photoReference}&key=${GOOGLE_MAPS_API_KEY}`;
               const photoResponse = await fetch(photoUrl);
@@ -101,8 +109,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Final fallback: hiking-themed placeholder
-    const seed = Math.abs(hashCode(placeId + query + index));
+    // Final fallback: unique placeholder for each trail
+    // Use placeId + trailIndex + photoIndex to ensure uniqueness
+    const uniqueKey = `${placeId}-${trailIndex}-${photoIndex}`;
+    const seed = Math.abs(hashCode(uniqueKey));
     const picsumUrl = `https://picsum.photos/seed/trail${seed}/800/500`;
     const fallbackResponse = await fetch(picsumUrl, { redirect: 'follow' });
 
@@ -120,8 +130,9 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching place photo:', error);
 
-    // Error fallback
-    const seed = Math.abs(hashCode((query || placeId) + index));
+    // Error fallback - ensure unique seed per trail
+    const uniqueKey = `${placeId}-${trailIndex}-${photoIndex}`;
+    const seed = Math.abs(hashCode(uniqueKey));
     return NextResponse.redirect(`https://picsum.photos/seed/hiking${seed}/800/500`, { status: 302 });
   }
 }
