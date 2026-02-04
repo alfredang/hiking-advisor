@@ -712,6 +712,7 @@ export function searchTrails(query: string): Trail[] {
       trail.name.toLowerCase().includes(lowercaseQuery) ||
       trail.location.city.toLowerCase().includes(lowercaseQuery) ||
       trail.location.state.toLowerCase().includes(lowercaseQuery) ||
+      trail.location.country.toLowerCase().includes(lowercaseQuery) ||
       trail.description.toLowerCase().includes(lowercaseQuery)
   );
 }
