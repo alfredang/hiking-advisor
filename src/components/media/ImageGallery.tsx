@@ -47,6 +47,7 @@ export function ImageGallery({ images, trailName }: ImageGalleryProps) {
               fill
               className="object-cover gallery-image"
               sizes="(max-width: 768px) 50vw, 200px"
+              unoptimized
             />
             {index === 3 && remainingCount > 0 && (
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center">

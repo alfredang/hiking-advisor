@@ -2,8 +2,14 @@ import { Trail } from '@/types';
 
 // Generate Google Places API photo URL for trail images
 // This endpoint proxies photos from Google Places API based on trail/location name
-const getPlacePhotoUrl = (query: string) =>
-  `/api/place-photo?query=${encodeURIComponent(query)}`;
+// The cacheKey parameter ensures browser caching treats each trail's image as unique
+const getPlacePhotoUrl = (query: string, cacheKey?: string) => {
+  const params = new URLSearchParams({ query });
+  if (cacheKey) {
+    params.set('cacheKey', cacheKey);
+  }
+  return `/api/place-photo?${params.toString()}`;
+};
 
 export const mockTrails: Trail[] = [
   {
@@ -44,8 +50,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.3412, lng: 103.8332 },
     ],
     images: [
-      getPlacePhotoUrl('MacRitchie TreeTop Walk Singapore'),
-      getPlacePhotoUrl('MacRitchie Reservoir Singapore'),
+      getPlacePhotoUrl('MacRitchie TreeTop Walk Singapore', 'trail-1-0'),
+      getPlacePhotoUrl('MacRitchie Reservoir Singapore', 'trail-1-1'),
     ],
     rating: 4.8,
     reviewCount: 3542,
@@ -86,8 +92,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.3547, lng: 103.7765 },
     ],
     images: [
-      getPlacePhotoUrl('Bukit Timah Nature Reserve Singapore'),
-      getPlacePhotoUrl('Bukit Timah Hill Summit Singapore'),
+      getPlacePhotoUrl('Bukit Timah Nature Reserve Singapore', 'trail-2-0'),
+      getPlacePhotoUrl('Bukit Timah Hill Summit Singapore', 'trail-2-1'),
     ],
     rating: 4.7,
     reviewCount: 2876,
@@ -129,8 +135,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.2842, lng: 103.8012 },
     ],
     images: [
-      getPlacePhotoUrl('Henderson Waves Bridge Singapore'),
-      getPlacePhotoUrl('Southern Ridges Singapore'),
+      getPlacePhotoUrl('Henderson Waves Bridge Singapore', 'trail-3-0'),
+      getPlacePhotoUrl('Southern Ridges Singapore', 'trail-3-1'),
     ],
     rating: 4.9,
     reviewCount: 4123,
@@ -172,8 +178,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.4087, lng: 103.9678 },
     ],
     images: [
-      getPlacePhotoUrl('Chek Jawa Wetlands Singapore'),
-      getPlacePhotoUrl('Pulau Ubin Singapore'),
+      getPlacePhotoUrl('Chek Jawa Wetlands Singapore', 'trail-4-0'),
+      getPlacePhotoUrl('Pulau Ubin Singapore', 'trail-4-1'),
     ],
     rating: 4.6,
     reviewCount: 1892,
@@ -215,8 +221,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.4312, lng: 103.7689 },
     ],
     images: [
-      getPlacePhotoUrl('Rail Corridor Singapore'),
-      getPlacePhotoUrl('Green Corridor Singapore'),
+      getPlacePhotoUrl('Rail Corridor Singapore', 'trail-5-0'),
+      getPlacePhotoUrl('Green Corridor Singapore', 'trail-5-1'),
     ],
     rating: 4.5,
     reviewCount: 2341,
@@ -258,8 +264,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.4456, lng: 103.7312 },
     ],
     images: [
-      getPlacePhotoUrl('Sungei Buloh Wetland Reserve Singapore'),
-      getPlacePhotoUrl('Sungei Buloh Nature Reserve Singapore'),
+      getPlacePhotoUrl('Sungei Buloh Wetland Reserve Singapore', 'trail-6-0'),
+      getPlacePhotoUrl('Sungei Buloh Nature Reserve Singapore', 'trail-6-1'),
     ],
     rating: 4.4,
     reviewCount: 1654,
@@ -301,8 +307,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.4123, lng: 103.9145 },
     ],
     images: [
-      getPlacePhotoUrl('Coney Island Park Singapore'),
-      getPlacePhotoUrl('Coney Island Beach Singapore'),
+      getPlacePhotoUrl('Coney Island Park Singapore', 'trail-7-0'),
+      getPlacePhotoUrl('Coney Island Beach Singapore', 'trail-7-1'),
     ],
     rating: 4.5,
     reviewCount: 1234,
@@ -344,8 +350,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.3756, lng: 103.7798 },
     ],
     images: [
-      getPlacePhotoUrl('Chestnut Nature Park Singapore'),
-      getPlacePhotoUrl('Chestnut Nature Park Trail Singapore'),
+      getPlacePhotoUrl('Chestnut Nature Park Singapore', 'trail-8-0'),
+      getPlacePhotoUrl('Chestnut Nature Park Trail Singapore', 'trail-8-1'),
     ],
     rating: 4.3,
     reviewCount: 987,
@@ -387,8 +393,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.2656, lng: 103.8034 },
     ],
     images: [
-      getPlacePhotoUrl('Labrador Nature Reserve Singapore'),
-      getPlacePhotoUrl('Labrador Park Singapore'),
+      getPlacePhotoUrl('Labrador Nature Reserve Singapore', 'trail-9-0'),
+      getPlacePhotoUrl('Labrador Park Singapore', 'trail-9-1'),
     ],
     rating: 4.4,
     reviewCount: 876,
@@ -430,8 +436,8 @@ export const mockTrails: Trail[] = [
       { lat: 1.2934, lng: 103.8445 },
     ],
     images: [
-      getPlacePhotoUrl('Fort Canning Park Singapore'),
-      getPlacePhotoUrl('Fort Canning Spiral Staircase Singapore'),
+      getPlacePhotoUrl('Fort Canning Park Singapore', 'trail-10-0'),
+      getPlacePhotoUrl('Fort Canning Spiral Staircase Singapore', 'trail-10-1'),
     ],
     rating: 4.6,
     reviewCount: 2345,
@@ -473,8 +479,8 @@ export const mockTrails: Trail[] = [
       { lat: 6.0753, lng: 116.5584 },
     ],
     images: [
-      getPlacePhotoUrl('Mount Kinabalu Sabah Malaysia'),
-      getPlacePhotoUrl('Mount Kinabalu Summit Borneo'),
+      getPlacePhotoUrl('Mount Kinabalu Sabah Malaysia', 'trail-11-0'),
+      getPlacePhotoUrl('Mount Kinabalu Summit Borneo', 'trail-11-1'),
     ],
     rating: 4.9,
     reviewCount: 8765,
@@ -515,8 +521,8 @@ export const mockTrails: Trail[] = [
       { lat: 2.9389, lng: 101.9031 },
     ],
     images: [
-      getPlacePhotoUrl('Bukit Broga Semenyih Malaysia'),
-      getPlacePhotoUrl('Broga Hill Sunrise Malaysia'),
+      getPlacePhotoUrl('Bukit Broga Semenyih Malaysia', 'trail-12-0'),
+      getPlacePhotoUrl('Broga Hill Sunrise Malaysia', 'trail-12-1'),
     ],
     rating: 4.5,
     reviewCount: 5432,
@@ -558,8 +564,8 @@ export const mockTrails: Trail[] = [
       { lat: 4.3812, lng: 102.4145 },
     ],
     images: [
-      getPlacePhotoUrl('Taman Negara Canopy Walkway Malaysia'),
-      getPlacePhotoUrl('Taman Negara National Park Malaysia'),
+      getPlacePhotoUrl('Taman Negara Canopy Walkway Malaysia', 'trail-13-0'),
+      getPlacePhotoUrl('Taman Negara National Park Malaysia', 'trail-13-1'),
     ],
     rating: 4.7,
     reviewCount: 3456,
@@ -600,8 +606,8 @@ export const mockTrails: Trail[] = [
       { lat: 2.3589, lng: 102.6203 },
     ],
     images: [
-      getPlacePhotoUrl('Gunung Ledang Mount Ophir Malaysia'),
-      getPlacePhotoUrl('Mount Ophir Johor Malaysia'),
+      getPlacePhotoUrl('Gunung Ledang Mount Ophir Malaysia', 'trail-14-0'),
+      getPlacePhotoUrl('Mount Ophir Johor Malaysia', 'trail-14-1'),
     ],
     rating: 4.6,
     reviewCount: 2187,
@@ -642,8 +648,8 @@ export const mockTrails: Trail[] = [
       { lat: 5.4234, lng: 100.2678 },
     ],
     images: [
-      getPlacePhotoUrl('Penang Hill Malaysia'),
-      getPlacePhotoUrl('Penang Hill Hiking Trail Malaysia'),
+      getPlacePhotoUrl('Penang Hill Malaysia', 'trail-15-0'),
+      getPlacePhotoUrl('Penang Hill Hiking Trail Malaysia', 'trail-15-1'),
     ],
     rating: 4.4,
     reviewCount: 4321,
@@ -685,8 +691,8 @@ export const mockTrails: Trail[] = [
       { lat: 4.5178, lng: 101.3856 },
     ],
     images: [
-      getPlacePhotoUrl('Cameron Highlands Mossy Forest Malaysia'),
-      getPlacePhotoUrl('Cameron Highlands Malaysia'),
+      getPlacePhotoUrl('Cameron Highlands Mossy Forest Malaysia', 'trail-16-0'),
+      getPlacePhotoUrl('Cameron Highlands Malaysia', 'trail-16-1'),
     ],
     rating: 4.5,
     reviewCount: 2876,

@@ -70,6 +70,7 @@ export function LightboxModal({ images, initialIndex, trailName, onClose }: Ligh
             className="object-contain"
             sizes="100vw"
             priority
+            unoptimized
           />
         </div>
       </div>
@@ -106,7 +107,7 @@ export function LightboxModal({ images, initialIndex, trailName, onClose }: Ligh
                 index === currentIndex ? 'ring-2 ring-white' : 'opacity-60 hover:opacity-100'
               )}
             >
-              <Image src={image} alt={`Thumbnail ${index + 1}`} fill className="object-cover" sizes="64px" />
+              <Image src={image} alt={`Thumbnail ${index + 1}`} fill className="object-cover" sizes="64px" unoptimized />
             </button>
           ))}
         </div>

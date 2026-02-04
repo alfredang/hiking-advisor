@@ -23,34 +23,10 @@ interface PlacesResponse {
 const photoRefCache = new Map<string, { ref: string; expires: number }>();
 const CACHE_TTL = 1000 * 60 * 60; // 1 hour
 
-// Helper function to fetch and proxy fallback images
-async function fetchFallbackImage(query: string): Promise<NextResponse> {
-  try {
-    const fallbackUrl = `https://picsum.photos/seed/${encodeURIComponent(query)}/800/600`;
-    const response = await fetch(fallbackUrl, { redirect: 'follow' });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch fallback image');
-    }
-
-    const imageBuffer = await response.arrayBuffer();
-    const contentType = response.headers.get('content-type') || 'image/jpeg';
-
-    return new NextResponse(imageBuffer, {
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=86400, s-maxage=86400',
-      },
-    });
-  } catch {
-    // Return a simple placeholder as last resort
-    return new NextResponse(null, { status: 404 });
-  }
-}
-
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get('query');
+  const cacheKey = searchParams.get('cacheKey') || '';
   const maxWidth = searchParams.get('maxwidth') || '800';
 
   if (!query) {
@@ -58,21 +34,21 @@ export async function GET(request: NextRequest) {
   }
 
   if (!GOOGLE_MAPS_API_KEY) {
-    // Fetch and proxy fallback image
-    return fetchFallbackImage(query);
+    console.error('Google Maps API key not configured');
+    return new NextResponse('API not configured', { status: 500 });
   }
 
   try {
-    // Check cache first
-    const cacheKey = query.toLowerCase();
-    const cached = photoRefCache.get(cacheKey);
+    // Use both query and cacheKey for cache lookup to ensure uniqueness
+    const fullCacheKey = `${query.toLowerCase()}-${cacheKey}`;
+    const cached = photoRefCache.get(fullCacheKey);
 
     let photoRef: string | null = null;
 
     if (cached && cached.expires > Date.now()) {
       photoRef = cached.ref;
     } else {
-      // Search for the place
+      // Search for the place using Google Places Text Search
       const searchResponse = await fetch(
         `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}`
       );
@@ -84,12 +60,15 @@ export async function GET(request: NextRequest) {
       const searchData: PlacesResponse = await searchResponse.json();
 
       if (searchData.status === 'OK' && searchData.results.length > 0) {
-        // Find the first result with photos
+        // Find a result with photos, preferring landscape-oriented photos
         for (const place of searchData.results) {
           if (place.photos && place.photos.length > 0) {
-            photoRef = place.photos[0].photo_reference;
+            // Try to find a landscape photo (width > height)
+            const landscapePhoto = place.photos.find(p => p.width > p.height);
+            photoRef = landscapePhoto?.photo_reference || place.photos[0].photo_reference;
+
             // Cache the photo reference
-            photoRefCache.set(cacheKey, {
+            photoRefCache.set(fullCacheKey, {
               ref: photoRef,
               expires: Date.now() + CACHE_TTL,
             });
@@ -100,11 +79,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (!photoRef) {
-      // No photo found, use fallback
-      return fetchFallbackImage(query);
+      return new NextResponse('No photo found for this location', { status: 404 });
     }
 
-    // Fetch the actual photo and proxy it
+    // Fetch the actual photo from Google Places Photo API
     const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photo_reference=${photoRef}&key=${GOOGLE_MAPS_API_KEY}`;
 
     const photoResponse = await fetch(photoUrl);
@@ -113,20 +91,18 @@ export async function GET(request: NextRequest) {
       throw new Error('Failed to fetch photo');
     }
 
-    // Get the image data
+    // Get the image data and proxy it
     const imageBuffer = await photoResponse.arrayBuffer();
     const contentType = photoResponse.headers.get('content-type') || 'image/jpeg';
 
-    // Return the image with caching headers
     return new NextResponse(imageBuffer, {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=86400, s-maxage=86400', // Cache for 24 hours
+        'Cache-Control': 'public, max-age=86400, s-maxage=86400',
       },
     });
   } catch (error) {
     console.error('Error fetching place photo:', error);
-    // Fallback to picsum
-    return fetchFallbackImage(query);
+    return new NextResponse('Failed to fetch photo', { status: 500 });
   }
 }
