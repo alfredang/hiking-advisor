@@ -19,17 +19,6 @@ interface PlacesResponse {
   status: string;
 }
 
-// Simple hash for unique fallback seeds
-function hashCode(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return hash;
-}
-
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const photoRef = searchParams.get('photoRef');
@@ -109,30 +98,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Final fallback: unique placeholder for each trail
-    // Use placeId + trailIndex + photoIndex to ensure uniqueness
-    const uniqueKey = `${placeId}-${trailIndex}-${photoIndex}`;
-    const seed = Math.abs(hashCode(uniqueKey));
-    const picsumUrl = `https://picsum.photos/seed/trail${seed}/800/500`;
-    const fallbackResponse = await fetch(picsumUrl, { redirect: 'follow' });
-
-    if (fallbackResponse.ok) {
-      const imageBuffer = await fallbackResponse.arrayBuffer();
-      return new NextResponse(imageBuffer, {
-        headers: {
-          'Content-Type': 'image/jpeg',
-          'Cache-Control': 'public, max-age=3600',
-        },
-      });
-    }
-
-    return new NextResponse('No photo found', { status: 404 });
+    // If we reach here, we could not obtain an authoritative Places photo
+    return new NextResponse('No Google Places photo found', { status: 404 });
   } catch (error) {
     console.error('Error fetching place photo:', error);
-
-    // Error fallback - ensure unique seed per trail
-    const uniqueKey = `${placeId}-${trailIndex}-${photoIndex}`;
-    const seed = Math.abs(hashCode(uniqueKey));
-    return NextResponse.redirect(`https://picsum.photos/seed/hiking${seed}/800/500`, { status: 302 });
+    return new NextResponse('Failed to fetch Google Places photo', { status: 500 });
   }
 }

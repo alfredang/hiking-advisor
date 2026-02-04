@@ -102,34 +102,25 @@ async function placeToTrail(place: PlaceResult, index: number, detailedPhotos?: 
   // Use detailed photos if available (from Place Details API), otherwise use photos from search
   const photos = detailedPhotos && detailedPhotos.length > 0 ? detailedPhotos : place.photos;
 
-  // Generate image URLs - use photo_reference from Places API
-  // IMPORTANT: Use different photos for each trail by offsetting based on trail index
+  // Generate image URLs - exclusively from Google Places photos. No external placeholders.
   const images: string[] = [];
   if (photos && photos.length > 0) {
-    // Calculate starting offset based on trail index to ensure different photos per trail
-    // Each trail gets different photos from the array
-    const startOffset = (index * 2) % Math.max(1, photos.length);
+    // Prefer highest-resolution photos first, then rotate for variety per trail
+    const sorted = [...photos].sort((a, b) => b.width * b.height - a.width * a.height);
+    const startOffset = (index * 2) % Math.max(1, sorted.length);
 
-    for (let i = 0; i < 2; i++) {
-      // Pick different photo for each trail by using offset + i
-      const photoIndex = (startOffset + i) % photos.length;
-      const photoRef = photos[photoIndex].photo_reference;
-      // Include trail index in URL to ensure uniqueness
+    for (let i = 0; i < Math.min(3, sorted.length); i++) {
+      const photoIndex = (startOffset + i) % sorted.length;
+      const photoRef = sorted[photoIndex].photo_reference;
       images.push(`/api/place-photo?photoRef=${encodeURIComponent(photoRef)}&placeId=${place.place_id}&trailIndex=${index}&photoIndex=${photoIndex}`);
     }
   }
 
-  // If not enough photos, use zip code + place name for more accurate fallback search
-  // Add trail index to make each fallback unique
-  while (images.length < 2) {
-    const searchQuery = zipCode
-      ? `${place.name} ${zipCode} ${country}`
-      : `${place.name} ${city} ${country}`;
-    images.push(`/api/place-photo?query=${encodeURIComponent(searchQuery)}&placeId=${place.place_id}&trailIndex=${index}&photoIndex=${images.length}`);
-  }
+  // If still missing, return empty array; UI will handle missing with no mock
 
   return {
     id: baseId,
+    placeId: place.place_id,
     name: place.name,
     description: `Explore ${place.name} located in ${place.formatted_address}. This is a popular hiking destination with beautiful natural scenery.`,
     location: {

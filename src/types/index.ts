@@ -38,6 +38,8 @@ export interface TrailFacilities {
 // Main Trail interface
 export interface Trail {
   id: string;
+  // Google Places identifier for fetching authoritative photos and details
+  placeId?: string;
   name: string;
   description: string;
   location: TrailLocation;

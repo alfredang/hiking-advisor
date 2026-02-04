@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @next/next/no-img-element */
 
 import { Cloud, Droplets, Wind, Thermometer, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';

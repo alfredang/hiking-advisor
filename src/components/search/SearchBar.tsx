@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, MapPin, X, Loader2 } from 'lucide-react';
 import { Input, Button } from '@/components/ui';
 import { useStore } from '@/store/useStore';
@@ -11,44 +11,47 @@ export function SearchBar() {
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const [hasLoadedInitial, setHasLoadedInitial] = useState(false);
 
+  const fetchTrails = useCallback(
+    async (query?: string, lat?: number, lng?: number) => {
+      setIsSearching(true);
+      try {
+        let url = '/api/trails';
+        const params = new URLSearchParams();
+
+        if (query) {
+          params.set('q', query);
+        } else if (lat !== undefined && lng !== undefined) {
+          params.set('lat', lat.toString());
+          params.set('lng', lng.toString());
+        }
+
+        if (params.toString()) {
+          url += `?${params.toString()}`;
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+        setSearchResults(data.trails || []);
+        if (data.trails?.length > 0) {
+          setMapCenter(data.trails[0].location.coordinates);
+        }
+      } catch (error) {
+        console.error('Failed to fetch trails:', error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [setIsSearching, setSearchResults, setMapCenter]
+  );
+
   // Load default trails on initial mount
   useEffect(() => {
     if (!hasLoadedInitial) {
       setHasLoadedInitial(true);
       void fetchTrails();
     }
-  }, [hasLoadedInitial]);
-
-  const fetchTrails = async (query?: string, lat?: number, lng?: number) => {
-    setIsSearching(true);
-    try {
-      let url = '/api/trails';
-      const params = new URLSearchParams();
-
-      if (query) {
-        params.set('q', query);
-      } else if (lat !== undefined && lng !== undefined) {
-        params.set('lat', lat.toString());
-        params.set('lng', lng.toString());
-      }
-
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
-
-      const response = await fetch(url);
-      const data = await response.json();
-      setSearchResults(data.trails || []);
-      if (data.trails?.length > 0) {
-        setMapCenter(data.trails[0].location.coordinates);
-      }
-    } catch (error) {
-      console.error('Failed to fetch trails:', error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  };
+  }, [fetchTrails, hasLoadedInitial]);
 
   const handleSearch = async () => {
     setSearchQuery(localQuery);

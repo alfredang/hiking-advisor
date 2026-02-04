@@ -1,144 +1,80 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const PEXELS_API_KEY = process.env.PEXELS_API_KEY;
+// This route now strictly proxies Google Places photos to ensure accuracy.
+// It mirrors /api/place-photo but keeps backward compatibility for callers.
 
-interface PexelsPhoto {
-  id: number;
-  src: {
-    original: string;
-    large2x: string;
-    large: string;
-    medium: string;
-  };
-  alt: string;
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+interface PlacePhoto {
+  photo_reference: string;
+  height: number;
+  width: number;
 }
 
-interface PexelsResponse {
-  photos: PexelsPhoto[];
-  total_results: number;
+interface PlaceResult {
+  place_id: string;
+  photos?: PlacePhoto[];
 }
 
-// Hiking-specific search terms based on trail characteristics
-function getHikingSearchTerm(difficulty: string, country: string, index: number): string {
-  // Curated hiking-specific search terms that Pexels has good results for
-  const hikingTerms = [
-    'hiking trail forest',
-    'mountain hiking path',
-    'nature trail walking',
-    'forest hiking',
-    'mountain landscape trail',
-    'scenic hiking',
-    'wilderness trail',
-    'hiking adventure nature',
-    'mountain path hiking',
-    'forest path nature',
-    'hiking mountains scenic',
-    'trail nature walking',
-    'outdoor hiking trail',
-    'mountain hiking scenic',
-    'nature walk forest',
-  ];
-
-  // Different terms by difficulty
-  const difficultyTerms: Record<string, string[]> = {
-    easy: ['nature walk', 'forest path', 'peaceful trail', 'garden path'],
-    moderate: ['hiking trail', 'mountain path', 'scenic trail', 'nature hike'],
-    hard: ['mountain summit', 'alpine hiking', 'mountain peak', 'rocky trail'],
-  };
-
-  // Use combination of index and difficulty for variety
-  const baseTerms = difficultyTerms[difficulty] || difficultyTerms['moderate'];
-  const baseTerm = baseTerms[index % baseTerms.length];
-  const hikingTerm = hikingTerms[(index + difficulty.length) % hikingTerms.length];
-
-  // Combine for more specific search
-  return index % 2 === 0 ? baseTerm : hikingTerm;
-}
-
-// Simple hash for consistent results
-function hashString(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return Math.abs(hash);
+interface PlacesResponse {
+  results: PlaceResult[];
+  status: string;
 }
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const trailName = searchParams.get('name') || 'hiking trail';
-  const country = searchParams.get('country') || '';
-  const difficulty = searchParams.get('difficulty') || 'moderate';
-  const index = parseInt(searchParams.get('index') || '0', 10);
-  const trailId = searchParams.get('id') || trailName;
+  const trailName = searchParams.get('name') || '';
+  const placeId = searchParams.get('placeId');
+  const count = Math.min(parseInt(searchParams.get('count') || '2', 10), 5);
+
+  if (!GOOGLE_MAPS_API_KEY) {
+    return new NextResponse('Google API key not configured', { status: 500 });
+  }
 
   try {
-    // Create unique hash for this trail
-    const trailHash = hashString(trailId + trailName);
+    const images: string[] = [];
 
-    // Get hiking-specific search term
-    const searchQuery = getHikingSearchTerm(difficulty, country, index + trailHash);
+    const pushPhotos = (photos: PlacePhoto[], basePlaceId: string) => {
+      const sorted = [...photos].sort((a, b) => b.width * b.height - a.width * a.height);
+      for (const photo of sorted.slice(0, count)) {
+        images.push(`/api/place-photo?photoRef=${encodeURIComponent(photo.photo_reference)}&placeId=${basePlaceId}`);
+      }
+    };
 
-    // Use different page based on trail hash for variety
-    const page = (trailHash % 15) + 1;
+    // Direct details fetch when placeId provided
+    if (placeId) {
+      const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=photos&key=${GOOGLE_MAPS_API_KEY}`;
+      const detailsResp = await fetch(detailsUrl);
+      if (detailsResp.ok) {
+        const detailsData = await detailsResp.json();
+        if (detailsData.status === 'OK' && detailsData.result?.photos?.length) {
+          pushPhotos(detailsData.result.photos, placeId);
+        }
+      }
+    }
 
-    if (PEXELS_API_KEY) {
-      const pexelsUrl = `https://api.pexels.com/v1/search?query=${encodeURIComponent(searchQuery)}&per_page=15&page=${page}&orientation=landscape`;
-
-      const response = await fetch(pexelsUrl, {
-        headers: {
-          'Authorization': PEXELS_API_KEY,
-        },
-      });
-
-      if (response.ok) {
-        const data: PexelsResponse = await response.json();
-
-        if (data.photos && data.photos.length > 0) {
-          // Select image based on combined hash for uniqueness
-          const imageIndex = (trailHash + index) % data.photos.length;
-          const photo = data.photos[imageIndex];
-
-          // Fetch and proxy the image
-          const imageResponse = await fetch(photo.src.large);
-          if (imageResponse.ok) {
-            const imageBuffer = await imageResponse.arrayBuffer();
-            return new NextResponse(imageBuffer, {
-              headers: {
-                'Content-Type': 'image/jpeg',
-                'Cache-Control': 'public, max-age=86400, s-maxage=86400',
-              },
-            });
+    // Text search fallback by trail name
+    if (!images.length && trailName) {
+      const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(trailName)}&type=park|natural_feature|tourist_attraction&key=${GOOGLE_MAPS_API_KEY}`;
+      const searchResp = await fetch(searchUrl);
+      if (searchResp.ok) {
+        const searchData: PlacesResponse = await searchResp.json();
+        if (searchData.status === 'OK' && searchData.results.length) {
+          const best = searchData.results[0];
+          if (best.photos?.length) {
+            pushPhotos(best.photos, best.place_id);
           }
         }
       }
     }
 
-    // Fallback: Use picsum with hiking-themed seed
-    // Use a hiking-specific ID range that tends to have nature images
-    const natureSeed = 100 + (hashString(trailId + index.toString()) % 900);
-    const picsumUrl = `https://picsum.photos/seed/hiking${natureSeed}/800/500`;
-
-    const picsumResponse = await fetch(picsumUrl, { redirect: 'follow' });
-
-    if (picsumResponse.ok) {
-      const imageBuffer = await picsumResponse.arrayBuffer();
-      return new NextResponse(imageBuffer, {
-        headers: {
-          'Content-Type': 'image/jpeg',
-          'Cache-Control': 'public, max-age=86400',
-        },
-      });
+    if (!images.length) {
+      return new NextResponse('No Google Places photo found', { status: 404 });
     }
 
-    return new NextResponse('Image not found', { status: 404 });
+    return NextResponse.json({ images });
   } catch (error) {
     console.error('Error fetching trail image:', error);
-
-    // Final fallback with unique seed
-    const seed = hashString(trailId + index.toString());
-    return NextResponse.redirect(`https://picsum.photos/seed/trail${seed}/800/500`, { status: 302 });
+    return new NextResponse('Failed to fetch image', { status: 500 });
   }
 }

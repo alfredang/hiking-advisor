@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useState } from 'react';
 import { MapPin, Star, Heart, AlertTriangle, Share2, Navigation } from 'lucide-react';
@@ -23,27 +24,39 @@ export function TrailDetails({ trail }: TrailDetailsProps) {
   const isFav = isFavorite(trail.id);
   const [isLoadingWeather, setIsLoadingWeather] = useState(false);
   const [trailImages, setTrailImages] = useState<string[]>(trail.images);
+  const [imageError, setImageError] = useState(false);
+
+  const primaryImage = trailImages[0];
 
   // Fetch images from Google Places when trail changes
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        const response = await fetch(
-          `/api/images?query=${encodeURIComponent(trail.name + ' Singapore')}&count=5`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          if (data.images && data.images.length > 0) {
-            setTrailImages(data.images);
-          }
+        const params = new URLSearchParams({
+          count: '5',
+        });
+
+        if (trail.placeId) {
+          params.set('placeId', trail.placeId);
+        } else {
+          params.set('query', `${trail.name} ${trail.location.city} ${trail.location.state} ${trail.location.country}`);
+        }
+
+        const response = await fetch(`/api/images?${params.toString()}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.images && data.images.length > 0) {
+          setTrailImages(data.images);
+          setImageError(false);
         }
       } catch (error) {
         console.error('Failed to fetch images:', error);
+        setImageError(true);
       }
     };
 
     fetchImages();
-  }, [trail.id, trail.name]);
+  }, [trail.id, trail.name, trail.location.city, trail.location.state, trail.location.country, trail.placeId]);
 
   // Fetch weather when trail changes
   useEffect(() => {
@@ -66,7 +79,7 @@ export function TrailDetails({ trail }: TrailDetailsProps) {
     };
 
     fetchWeather();
-  }, [trail.id]);
+  }, [trail.id, trail.location.coordinates.lat, trail.location.coordinates.lng, setTrailSuitability, setTrailWeather]);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -96,11 +109,18 @@ export function TrailDetails({ trail }: TrailDetailsProps) {
       {/* Hero image */}
       <div className="relative h-56 -mx-4 -mt-4">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={trailImages[0] || '/placeholder-trail.jpg'}
-          alt={trail.name}
-          className="w-full h-full object-cover"
-        />
+        {primaryImage && !imageError ? (
+          <img
+            src={primaryImage}
+            alt={trail.name}
+            onError={() => setImageError(true)}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
+            No photo available
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         <div className="absolute bottom-4 left-4 right-4">
           <DifficultyBadge difficulty={trail.stats.difficulty} />
