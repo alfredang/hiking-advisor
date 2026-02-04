@@ -48,8 +48,20 @@ function placeToTrail(place: PlaceResult, index: number): Trail {
   const state = addressParts.length > 2 ? addressParts[addressParts.length - 2] : '';
   const city = addressParts.length > 3 ? addressParts[addressParts.length - 3] : addressParts[0] || '';
 
-  // Generate image URL using our place-photo API
-  const imageQuery = encodeURIComponent(place.name);
+  // Generate image URLs - use photo_reference from Places API if available
+  const images: string[] = [];
+  if (place.photos && place.photos.length > 0) {
+    // Use actual Google Places photos for this specific place
+    for (let i = 0; i < Math.min(2, place.photos.length); i++) {
+      const photoRef = place.photos[i].photo_reference;
+      images.push(`/api/place-photo?photoRef=${encodeURIComponent(photoRef)}&placeId=${place.place_id}&index=${i}`);
+    }
+  }
+
+  // If not enough photos, add fallback
+  while (images.length < 2) {
+    images.push(`/api/place-photo?query=${encodeURIComponent(place.name)}&placeId=${place.place_id}&index=${images.length}`);
+  }
 
   return {
     id: baseId,
@@ -87,10 +99,7 @@ function placeToTrail(place: PlaceResult, index: number): Trail {
       { lat: place.geometry.location.lat + 0.005, lng: place.geometry.location.lng + 0.005 },
       { lat: place.geometry.location.lat + 0.01, lng: place.geometry.location.lng },
     ],
-    images: [
-      `/api/place-photo?query=${imageQuery}&cacheKey=${baseId}-0`,
-      `/api/place-photo?query=${imageQuery}+trail&cacheKey=${baseId}-1`,
-    ],
+    images: images,
     rating: place.rating || 4.0 + Math.random() * 0.9,
     reviewCount: place.user_ratings_total || Math.round(100 + Math.random() * 2000),
   };
