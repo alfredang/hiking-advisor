@@ -699,6 +699,259 @@ export const mockTrails: Trail[] = [
     rating: 4.5,
     reviewCount: 2876,
   },
+  // Japanese Trails
+  {
+    id: '17',
+    name: 'Mount Fuji Yoshida Trail',
+    description:
+      'Japan\'s iconic sacred mountain at 3,776m. The most popular Yoshida Trail offers mountain huts, stunning sunrise views, and a once-in-a-lifetime climbing experience.',
+    location: {
+      city: 'Fujiyoshida',
+      state: 'Yamanashi',
+      country: 'Japan',
+      coordinates: { lat: 35.3606, lng: 138.7274 },
+    },
+    stats: {
+      distance: 14,
+      elevationGain: 1450,
+      estimatedTime: 720,
+      difficulty: 'hard',
+      trailType: 'out-and-back',
+    },
+    facilities: {
+      parking: true,
+      toilets: true,
+      waterPoints: true,
+      campsites: true,
+    },
+    safetyNotes: [
+      'Official climbing season: July 1 - September 10',
+      'Book mountain huts in advance',
+      'Altitude sickness possible - acclimatize properly',
+      'Weather changes rapidly - bring warm layers',
+    ],
+    path: [
+      { lat: 35.3892, lng: 138.7312 },
+      { lat: 35.3749, lng: 138.7293 },
+      { lat: 35.3606, lng: 138.7274 },
+    ],
+    images: [
+      getPlacePhotoUrl('Mount Fuji Japan', 'trail-17-0'),
+      getPlacePhotoUrl('Mount Fuji Yoshida Trail', 'trail-17-1'),
+    ],
+    rating: 4.8,
+    reviewCount: 12543,
+  },
+  {
+    id: '18',
+    name: 'Kumano Kodo Nakahechi',
+    description:
+      'A UNESCO World Heritage pilgrimage route through the sacred mountains of Kii Peninsula. Ancient stone paths wind through mystical forests to historic shrines.',
+    location: {
+      city: 'Tanabe',
+      state: 'Wakayama',
+      country: 'Japan',
+      coordinates: { lat: 33.8401, lng: 135.7731 },
+    },
+    stats: {
+      distance: 38,
+      elevationGain: 1800,
+      estimatedTime: 1440,
+      difficulty: 'moderate',
+      trailType: 'point-to-point',
+    },
+    facilities: {
+      parking: true,
+      toilets: true,
+      waterPoints: true,
+      campsites: false,
+    },
+    safetyNotes: [
+      'Multi-day hike - book accommodations in advance',
+      'Luggage forwarding service available',
+      'Best seasons: Spring (Mar-May) and Autumn (Oct-Nov)',
+      'Download offline maps - limited cell coverage',
+    ],
+    path: [
+      { lat: 33.8312, lng: 135.7623 },
+      { lat: 33.8401, lng: 135.7731 },
+      { lat: 33.8489, lng: 135.7845 },
+    ],
+    images: [
+      getPlacePhotoUrl('Kumano Kodo Pilgrimage Trail Japan', 'trail-18-0'),
+      getPlacePhotoUrl('Kumano Kodo Nakahechi Wakayama', 'trail-18-1'),
+    ],
+    rating: 4.9,
+    reviewCount: 4567,
+  },
+  {
+    id: '19',
+    name: 'Mount Takao',
+    description:
+      'Tokyo\'s most accessible mountain at 599m. Multiple trails suit all fitness levels, from paved paths to natural forest routes. Features a historic temple and stunning city views.',
+    location: {
+      city: 'Hachioji',
+      state: 'Tokyo',
+      country: 'Japan',
+      coordinates: { lat: 35.6251, lng: 139.2435 },
+    },
+    stats: {
+      distance: 7.4,
+      elevationGain: 400,
+      estimatedTime: 180,
+      difficulty: 'easy',
+      trailType: 'loop',
+    },
+    facilities: {
+      parking: true,
+      toilets: true,
+      waterPoints: true,
+      campsites: false,
+    },
+    safetyNotes: [
+      'Cable car available for partial ascent',
+      'Very crowded on weekends and autumn',
+      'Multiple trail options - Trail 1 is easiest',
+      'Food stalls at summit',
+    ],
+    path: [
+      { lat: 35.6312, lng: 139.2512 },
+      { lat: 35.6281, lng: 139.2473 },
+      { lat: 35.6251, lng: 139.2435 },
+    ],
+    images: [
+      getPlacePhotoUrl('Mount Takao Tokyo Japan', 'trail-19-0'),
+      getPlacePhotoUrl('Takao-san Hiking Trail', 'trail-19-1'),
+    ],
+    rating: 4.5,
+    reviewCount: 8934,
+  },
+  {
+    id: '20',
+    name: 'Kamikochi Azusa River Trail',
+    description:
+      'A pristine alpine valley in the Northern Japan Alps. Crystal-clear rivers, dramatic peaks, and untouched nature make this one of Japan\'s most beautiful hiking destinations.',
+    location: {
+      city: 'Matsumoto',
+      state: 'Nagano',
+      country: 'Japan',
+      coordinates: { lat: 36.2478, lng: 137.6531 },
+    },
+    stats: {
+      distance: 10,
+      elevationGain: 150,
+      estimatedTime: 240,
+      difficulty: 'easy',
+      trailType: 'out-and-back',
+    },
+    facilities: {
+      parking: false,
+      toilets: true,
+      waterPoints: true,
+      campsites: true,
+    },
+    safetyNotes: [
+      'Private cars prohibited - bus/taxi access only',
+      'Open late April to mid-November',
+      'Bears present - carry bear bells',
+      'Book accommodation well in advance',
+    ],
+    path: [
+      { lat: 36.2412, lng: 137.6456 },
+      { lat: 36.2478, lng: 137.6531 },
+      { lat: 36.2534, lng: 137.6612 },
+    ],
+    images: [
+      getPlacePhotoUrl('Kamikochi Nagano Japan', 'trail-20-0'),
+      getPlacePhotoUrl('Kamikochi Azusa River', 'trail-20-1'),
+    ],
+    rating: 4.9,
+    reviewCount: 6234,
+  },
+  {
+    id: '21',
+    name: 'Yakushima Shiratani Unsuikyo',
+    description:
+      'An ancient cedar forest that inspired Studio Ghibli\'s Princess Mononoke. Walk among 1,000-year-old trees in a mystical moss-covered ravine on this UNESCO World Heritage island.',
+    location: {
+      city: 'Yakushima',
+      state: 'Kagoshima',
+      country: 'Japan',
+      coordinates: { lat: 30.3756, lng: 130.5234 },
+    },
+    stats: {
+      distance: 6,
+      elevationGain: 350,
+      estimatedTime: 180,
+      difficulty: 'moderate',
+      trailType: 'loop',
+    },
+    facilities: {
+      parking: true,
+      toilets: true,
+      waterPoints: false,
+      campsites: false,
+    },
+    safetyNotes: [
+      'Ferry or flight required to reach Yakushima',
+      'One of Japan\'s wettest places - rain gear essential',
+      'Multiple course options available',
+      'Start early to avoid crowds',
+    ],
+    path: [
+      { lat: 30.3723, lng: 130.5189 },
+      { lat: 30.3756, lng: 130.5234 },
+      { lat: 30.3789, lng: 130.5278 },
+    ],
+    images: [
+      getPlacePhotoUrl('Shiratani Unsuikyo Yakushima Japan', 'trail-21-0'),
+      getPlacePhotoUrl('Yakushima Cedar Forest Japan', 'trail-21-1'),
+    ],
+    rating: 4.8,
+    reviewCount: 3456,
+  },
+  {
+    id: '22',
+    name: 'Nakasendo Trail (Magome to Tsumago)',
+    description:
+      'Walk through Edo-period history on this preserved section of the ancient highway. Stone-paved paths connect two beautifully preserved post towns through forested mountains.',
+    location: {
+      city: 'Magome',
+      state: 'Gifu',
+      country: 'Japan',
+      coordinates: { lat: 35.5289, lng: 137.5689 },
+    },
+    stats: {
+      distance: 7.8,
+      elevationGain: 350,
+      estimatedTime: 180,
+      difficulty: 'easy',
+      trailType: 'point-to-point',
+    },
+    facilities: {
+      parking: true,
+      toilets: true,
+      waterPoints: true,
+      campsites: false,
+    },
+    safetyNotes: [
+      'Luggage forwarding service available between towns',
+      'Well-marked trail suitable for all ages',
+      'Traditional inns (ryokan) in both towns',
+      'Best in spring or autumn for weather',
+    ],
+    path: [
+      { lat: 35.5289, lng: 137.5689 },
+      { lat: 35.5423, lng: 137.5823 },
+      { lat: 35.5756, lng: 137.5956 },
+    ],
+    images: [
+      getPlacePhotoUrl('Nakasendo Trail Magome Tsumago Japan', 'trail-22-0'),
+      getPlacePhotoUrl('Magome Post Town Japan', 'trail-22-1'),
+    ],
+    rating: 4.7,
+    reviewCount: 5678,
+  },
 ];
 
 // Helper function to get trail by ID
