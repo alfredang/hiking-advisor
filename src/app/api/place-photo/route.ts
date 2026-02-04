@@ -1,110 +1,126 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+const GOOGLE_SEARCH_ENGINE_ID = process.env.GOOGLE_SEARCH_ENGINE_ID;
 
-interface PlacePhoto {
-  photo_reference: string;
-  height: number;
-  width: number;
+interface SearchResult {
+  link: string;
+  image: {
+    contextLink: string;
+    height: number;
+    width: number;
+  };
 }
 
-interface PlaceResult {
-  photos?: PlacePhoto[];
-  name: string;
-  place_id: string;
+interface CustomSearchResponse {
+  items?: SearchResult[];
 }
 
-interface PlacesResponse {
-  results: PlaceResult[];
-  status: string;
-}
-
-// Cache for photo references to avoid repeated API calls
-const photoRefCache = new Map<string, { ref: string; expires: number }>();
-const CACHE_TTL = 1000 * 60 * 60; // 1 hour
+// Cache for image URLs to avoid repeated API calls
+const imageCache = new Map<string, { url: string; expires: number }>();
+const CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get('query');
   const cacheKey = searchParams.get('cacheKey') || '';
-  const maxWidth = searchParams.get('maxwidth') || '800';
 
   if (!query) {
     return new NextResponse('Missing query parameter', { status: 400 });
   }
 
-  if (!GOOGLE_MAPS_API_KEY) {
-    console.error('Google Maps API key not configured');
-    return new NextResponse('API not configured', { status: 500 });
-  }
-
   try {
-    // Use both query and cacheKey for cache lookup to ensure uniqueness
+    // Use both query and cacheKey for cache lookup
     const fullCacheKey = `${query.toLowerCase()}-${cacheKey}`;
-    const cached = photoRefCache.get(fullCacheKey);
+    const cached = imageCache.get(fullCacheKey);
 
-    let photoRef: string | null = null;
+    let imageUrl: string | null = null;
 
     if (cached && cached.expires > Date.now()) {
-      photoRef = cached.ref;
-    } else {
-      // Search for the place using Google Places Text Search
-      const searchResponse = await fetch(
-        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}`
-      );
+      imageUrl = cached.url;
+    } else if (GOOGLE_API_KEY && GOOGLE_SEARCH_ENGINE_ID) {
+      // Use Google Custom Search API for images
+      const searchQuery = `${query} hiking trail scenery`;
+      const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_SEARCH_ENGINE_ID}&q=${encodeURIComponent(searchQuery)}&searchType=image&imgSize=large&imgType=photo&num=1&safe=active`;
 
-      if (!searchResponse.ok) {
-        throw new Error('Failed to search places');
-      }
+      const response = await fetch(searchUrl);
 
-      const searchData: PlacesResponse = await searchResponse.json();
+      if (response.ok) {
+        const data: CustomSearchResponse = await response.json();
 
-      if (searchData.status === 'OK' && searchData.results.length > 0) {
-        // Find a result with photos, preferring landscape-oriented photos
-        for (const place of searchData.results) {
-          if (place.photos && place.photos.length > 0) {
-            // Try to find a landscape photo (width > height)
-            const landscapePhoto = place.photos.find(p => p.width > p.height);
-            photoRef = landscapePhoto?.photo_reference || place.photos[0].photo_reference;
+        if (data.items && data.items.length > 0) {
+          // Find a landscape-oriented image
+          const landscapeImage = data.items.find(
+            (item) => item.image.width > item.image.height
+          );
+          imageUrl = landscapeImage?.link || data.items[0].link;
 
-            // Cache the photo reference
-            photoRefCache.set(fullCacheKey, {
-              ref: photoRef,
-              expires: Date.now() + CACHE_TTL,
-            });
-            break;
-          }
+          // Cache the result
+          imageCache.set(fullCacheKey, {
+            url: imageUrl,
+            expires: Date.now() + CACHE_TTL,
+          });
         }
       }
     }
 
-    if (!photoRef) {
-      return new NextResponse('No photo found for this location', { status: 404 });
+    // Fallback to Unsplash if Google Search not configured or failed
+    if (!imageUrl) {
+      const unsplashQuery = encodeURIComponent(`${query} hiking nature trail`);
+      // Use Unsplash Source for direct image URL (no API key needed)
+      // Adding cacheKey to get different images for different trails
+      const seed = cacheKey || query.substring(0, 10);
+      imageUrl = `https://source.unsplash.com/800x600/?${unsplashQuery}&sig=${seed}`;
+
+      imageCache.set(fullCacheKey, {
+        url: imageUrl,
+        expires: Date.now() + CACHE_TTL,
+      });
     }
 
-    // Fetch the actual photo from Google Places Photo API
-    const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photo_reference=${photoRef}&key=${GOOGLE_MAPS_API_KEY}`;
+    // Fetch and proxy the image
+    const imageResponse = await fetch(imageUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; TrailFinder/1.0)',
+      },
+    });
 
-    const photoResponse = await fetch(photoUrl);
-
-    if (!photoResponse.ok) {
-      throw new Error('Failed to fetch photo');
+    if (!imageResponse.ok) {
+      throw new Error('Failed to fetch image');
     }
 
-    // Get the image data and proxy it
-    const imageBuffer = await photoResponse.arrayBuffer();
-    const contentType = photoResponse.headers.get('content-type') || 'image/jpeg';
+    const imageBuffer = await imageResponse.arrayBuffer();
+    const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
 
     return new NextResponse(imageBuffer, {
       headers: {
         'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
-        'Vary': 'Accept-Encoding',
-        'X-Query': query.substring(0, 50),
+        'Cache-Control': 'public, max-age=86400, s-maxage=86400',
+        'X-Image-Source': GOOGLE_SEARCH_ENGINE_ID ? 'google' : 'unsplash',
       },
     });
   } catch (error) {
-    console.error('Error fetching place photo:', error);
-    return new NextResponse('Failed to fetch photo', { status: 500 });
+    console.error('Error fetching image:', error);
+
+    // Final fallback - return a placeholder hiking image from Unsplash
+    try {
+      const fallbackUrl = `https://source.unsplash.com/800x600/?hiking,mountain,trail&sig=${Date.now()}`;
+      const fallbackResponse = await fetch(fallbackUrl);
+
+      if (fallbackResponse.ok) {
+        const imageBuffer = await fallbackResponse.arrayBuffer();
+        return new NextResponse(imageBuffer, {
+          headers: {
+            'Content-Type': 'image/jpeg',
+            'Cache-Control': 'public, max-age=3600',
+            'X-Image-Source': 'fallback',
+          },
+        });
+      }
+    } catch {
+      // Ignore fallback errors
+    }
+
+    return new NextResponse('Failed to fetch image', { status: 500 });
   }
 }

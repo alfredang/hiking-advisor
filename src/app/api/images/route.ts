@@ -1,22 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+const GOOGLE_SEARCH_ENGINE_ID = process.env.GOOGLE_SEARCH_ENGINE_ID;
 
-interface PlacePhoto {
-  photo_reference: string;
-  height: number;
-  width: number;
+interface SearchResult {
+  link: string;
+  image: {
+    height: number;
+    width: number;
+  };
 }
 
-interface PlaceResult {
-  photos?: PlacePhoto[];
-  name: string;
-  place_id: string;
-}
-
-interface PlacesResponse {
-  results: PlaceResult[];
-  status: string;
+interface CustomSearchResponse {
+  items?: SearchResult[];
 }
 
 export async function GET(request: NextRequest) {
@@ -24,73 +20,63 @@ export async function GET(request: NextRequest) {
   const query = searchParams.get('query') || 'hiking trail';
   const count = parseInt(searchParams.get('count') || '5', 10);
 
-  if (!GOOGLE_MAPS_API_KEY) {
-    console.error('Google Maps API key not configured');
-    return NextResponse.json({ images: [], error: 'API not configured' }, { status: 500 });
-  }
-
   try {
-    // Search for the place using Google Places Text Search
-    const searchResponse = await fetch(
-      `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${GOOGLE_MAPS_API_KEY}`
-    );
+    const images: string[] = [];
 
-    if (!searchResponse.ok) {
-      throw new Error('Failed to search places');
-    }
+    // Try Google Custom Search if configured
+    if (GOOGLE_API_KEY && GOOGLE_SEARCH_ENGINE_ID) {
+      const searchQuery = `${query} hiking trail scenery landscape`;
+      const searchUrl = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${GOOGLE_SEARCH_ENGINE_ID}&q=${encodeURIComponent(searchQuery)}&searchType=image&imgSize=large&imgType=photo&num=${Math.min(count, 10)}&safe=active`;
 
-    const searchData: PlacesResponse = await searchResponse.json();
+      const response = await fetch(searchUrl);
 
-    if (searchData.status !== 'OK' || !searchData.results.length) {
-      return NextResponse.json({ images: [], error: 'No results found' });
-    }
+      if (response.ok) {
+        const data: CustomSearchResponse = await response.json();
 
-    // Collect photo references from results, preferring landscape photos
-    const photoRefs: string[] = [];
-    for (const place of searchData.results) {
-      if (place.photos) {
-        for (const photo of place.photos) {
-          // Prefer landscape-oriented photos
-          if (photo.width > photo.height) {
-            photoRefs.push(photo.photo_reference);
-          }
-          if (photoRefs.length >= count) break;
-        }
-        // If not enough landscape photos, add any photos
-        if (photoRefs.length < count) {
-          for (const photo of place.photos) {
-            if (!photoRefs.includes(photo.photo_reference)) {
-              photoRefs.push(photo.photo_reference);
-            }
-            if (photoRefs.length >= count) break;
+        if (data.items) {
+          // Prefer landscape images
+          const sortedItems = [...data.items].sort((a, b) => {
+            const aIsLandscape = a.image.width > a.image.height ? 1 : 0;
+            const bIsLandscape = b.image.width > b.image.height ? 1 : 0;
+            return bIsLandscape - aIsLandscape;
+          });
+
+          for (const item of sortedItems.slice(0, count)) {
+            images.push(item.link);
           }
         }
       }
-      if (photoRefs.length >= count) break;
     }
 
-    if (photoRefs.length === 0) {
-      return NextResponse.json({ images: [], error: 'No photos found' });
-    }
-
-    // Convert photo references to actual URLs by following redirects
-    const imagePromises = photoRefs.slice(0, count).map(async (ref) => {
-      try {
-        const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photo_reference=${ref}&key=${GOOGLE_MAPS_API_KEY}`;
-        // Fetch to get the redirect URL (Google Places Photo API redirects to the actual image)
-        const response = await fetch(photoUrl, { redirect: 'manual' });
-        const redirectUrl = response.headers.get('location');
-        return redirectUrl || photoUrl;
-      } catch {
-        return null;
+    // Fallback to Unsplash if no images found
+    if (images.length === 0) {
+      const unsplashQuery = encodeURIComponent(`${query} hiking nature`);
+      for (let i = 0; i < count; i++) {
+        // Use different seeds for different images
+        images.push(
+          `https://source.unsplash.com/800x600/?${unsplashQuery}&sig=${query.substring(0, 5)}-${i}`
+        );
       }
+    }
+
+    return NextResponse.json({
+      images,
+      source: GOOGLE_SEARCH_ENGINE_ID ? 'google' : 'unsplash',
     });
-
-    const images = (await Promise.all(imagePromises)).filter(Boolean) as string[];
-
-    return NextResponse.json({ images });
   } catch (error) {
     console.error('Error fetching images:', error);
-    return NextResponse.json({ images: [], error: 'Failed to fetch images' }, { status: 500 });
+
+    // Return Unsplash fallback images
+    const fallbackImages = [];
+    for (let i = 0; i < count; i++) {
+      fallbackImages.push(
+        `https://source.unsplash.com/800x600/?hiking,trail,nature&sig=fallback-${i}`
+      );
+    }
+
+    return NextResponse.json({
+      images: fallbackImages,
+      source: 'fallback',
+    });
   }
 }
