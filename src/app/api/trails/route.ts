@@ -78,8 +78,29 @@ async function getPlaceDetails(placeId: string): Promise<PlacePhoto[]> {
   return [];
 }
 
+function mergePhotos(primary?: PlacePhoto[], extra?: PlacePhoto[]): PlacePhoto[] {
+  const seen = new Set<string>();
+  const merged: PlacePhoto[] = [];
+
+  for (const list of [primary || [], extra || []]) {
+    for (const photo of list) {
+      if (!seen.has(photo.photo_reference)) {
+        seen.add(photo.photo_reference);
+        merged.push(photo);
+      }
+    }
+  }
+
+  return merged;
+}
+
 // Convert Google Places result to Trail format
-async function placeToTrail(place: PlaceResult, index: number, detailedPhotos?: PlacePhoto[], totalPlaces?: number): Promise<Trail> {
+async function placeToTrail(
+  place: PlaceResult,
+  index: number,
+  detailedPhotos: PlacePhoto[] | undefined,
+  usedHeroRefs: Set<string>
+): Promise<Trail> {
   const baseId = `place-${place.place_id.substring(0, 12)}`;
 
   // Estimate difficulty based on types
@@ -99,20 +120,45 @@ async function placeToTrail(place: PlaceResult, index: number, detailedPhotos?: 
   // Extract zip code for more accurate image search
   const zipCode = extractZipCode(place.formatted_address);
 
-  // Use detailed photos if available (from Place Details API), otherwise use photos from search
-  const photos = detailedPhotos && detailedPhotos.length > 0 ? detailedPhotos : place.photos;
+  // Merge photos from search and details to maximize variety
+  const photos = mergePhotos(place.photos, detailedPhotos);
 
   // Generate image URLs - exclusively from Google Places photos. No external placeholders.
   const images: string[] = [];
   if (photos && photos.length > 0) {
-    // Prefer highest-resolution photos first, then rotate for variety per trail
+    // Prefer highest-resolution photos first
     const sorted = [...photos].sort((a, b) => b.width * b.height - a.width * a.height);
-    const startOffset = (index * 2) % Math.max(1, sorted.length);
 
-    for (let i = 0; i < Math.min(3, sorted.length); i++) {
+    // Rotate starting index by placeId hash to avoid repeating the same first photo across places
+    const hash = Array.from(place.place_id).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const startOffset = (hash + index) % sorted.length;
+
+    // Pick a hero photo that hasn't been used yet across the page
+    let heroRef: string | null = null;
+    for (let i = 0; i < sorted.length; i++) {
       const photoIndex = (startOffset + i) % sorted.length;
-      const photoRef = sorted[photoIndex].photo_reference;
-      images.push(`/api/place-photo?photoRef=${encodeURIComponent(photoRef)}&placeId=${place.place_id}&trailIndex=${index}&photoIndex=${photoIndex}`);
+      const candidate = sorted[photoIndex].photo_reference;
+      if (!usedHeroRefs.has(candidate)) {
+        heroRef = candidate;
+        usedHeroRefs.add(candidate);
+        break;
+      }
+    }
+    // Fallback to startOffset if all photos already used
+    if (!heroRef) {
+      heroRef = sorted[startOffset].photo_reference;
+    }
+
+    // Add hero first
+    images.push(`/api/place-photo?photoRef=${encodeURIComponent(heroRef)}&placeId=${place.place_id}&trailIndex=${index}&photoIndex=hero`);
+
+    // Add up to two more distinct photos for gallery (skip duplicates)
+    for (let i = 0, added = 0; i < sorted.length && added < 2; i++) {
+      const photoIndex = (startOffset + i + 1) % sorted.length; // shift by 1 to avoid the same hero position
+      const ref = sorted[photoIndex].photo_reference;
+      if (ref === heroRef) continue;
+      images.push(`/api/place-photo?photoRef=${encodeURIComponent(ref)}&placeId=${place.place_id}&trailIndex=${index}&photoIndex=${photoIndex}`);
+      added++;
     }
   }
 
@@ -209,15 +255,17 @@ export async function GET(request: NextRequest) {
 
     // Fetch detailed photos for each place (in parallel for speed)
     // Only fetch details for places that don't have enough photos
+    const usedHeroRefs = new Set<string>();
+
     const trailPromises = places.map(async (place, index) => {
       let detailedPhotos: PlacePhoto[] | undefined;
 
-      // If place doesn't have photos or only has 1, fetch more from Place Details
-      if (!place.photos || place.photos.length < 2) {
+      // If place doesn't have photos or fewer than 3, fetch more from Place Details
+      if (!place.photos || place.photos.length < 3) {
         detailedPhotos = await getPlaceDetails(place.place_id);
       }
 
-      return placeToTrail(place, index, detailedPhotos);
+      return placeToTrail(place, index, detailedPhotos, usedHeroRefs);
     });
 
     const trails = await Promise.all(trailPromises);
