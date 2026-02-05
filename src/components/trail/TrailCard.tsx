@@ -1,7 +1,6 @@
 'use client';
 
-import Image from 'next/image';
-import { MapPin, Clock, TrendingUp, Star, Heart } from 'lucide-react';
+import { MapPin, Clock, TrendingUp, Star, Heart, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistance, formatDuration, formatElevation, formatRating } from '@/lib/utils';
 import { Card } from '@/components/ui';
@@ -26,6 +25,8 @@ export function TrailCard({ trail, isSelected, onClick }: TrailCardProps) {
     toggleFavorite(trail.id);
   };
 
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(trail.name)}&query_place_id=${encodeURIComponent(trail.placeId || '')}`;
+
   return (
     <Card
       variant="bordered"
@@ -36,41 +37,44 @@ export function TrailCard({ trail, isSelected, onClick }: TrailCardProps) {
       )}
       onClick={onClick}
     >
-      {/* Image */}
-      <div className="relative h-40 bg-gray-200">
-        <Image
-          src={trail.images[0] || '/placeholder-trail.jpg'}
-          alt={trail.name}
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 100vw, 384px"
-          unoptimized
-        />
+      {/* Compact header with difficulty & favorite */}
+      <div className="flex items-center justify-between px-4 pt-3">
+        <DifficultyBadge difficulty={trail.stats.difficulty} size="sm" />
         <button
           onClick={handleFavoriteClick}
           className={cn(
-            'absolute top-2 right-2 p-2 rounded-full backdrop-blur-sm transition-colors',
-            isFav ? 'bg-red-500 text-white' : 'bg-white/80 text-gray-600 hover:bg-white'
+            'p-2 rounded-full transition-colors',
+            isFav ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           )}
           aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
         >
           <Heart className={cn('h-4 w-4', isFav && 'fill-current')} />
         </button>
-        <div className="absolute bottom-2 left-2">
-          <DifficultyBadge difficulty={trail.stats.difficulty} size="sm" />
-        </div>
       </div>
 
       {/* Content */}
       <div className="p-4 space-y-3">
         {/* Header */}
-        <div>
-          <h3 className="font-semibold text-gray-900 line-clamp-1">{trail.name}</h3>
-          <div className="flex items-center gap-1 text-sm text-gray-500 mt-0.5">
-            <MapPin className="h-3 w-3 flex-shrink-0" />
-            <span className="line-clamp-1">
-              {trail.location.city}, {trail.location.state}
-            </span>
+        <div className="space-y-1">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h3 className="font-semibold text-gray-900 line-clamp-1">{trail.name}</h3>
+              <div className="flex items-center gap-1 text-sm text-gray-500 mt-0.5">
+                <MapPin className="h-3 w-3 flex-shrink-0" />
+                <span className="line-clamp-1">
+                  {trail.location.city}, {trail.location.state}
+                </span>
+              </div>
+            </div>
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1 text-xs text-forest-600 hover:text-forest-700"
+            >
+              Maps <ExternalLink className="h-3 w-3" />
+            </a>
           </div>
         </div>
 

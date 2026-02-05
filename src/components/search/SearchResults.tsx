@@ -87,21 +87,17 @@ export function SearchResults() {
     );
   }
 
-  const displayedResults = filteredResults.slice(0, 3);
-
   return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2 text-sm text-gray-500">
           <MapPin className="h-4 w-4" />
-          <span>
-            {filteredResults.length} trails found · showing top {displayedResults.length}
-          </span>
+          <span>{filteredResults.length} trails found</span>
         </div>
       </div>
 
       <div className="space-y-4">
-        {displayedResults.map((trail) => (
+        {filteredResults.map((trail) => (
           <TrailCard
             key={trail.id}
             trail={trail}
