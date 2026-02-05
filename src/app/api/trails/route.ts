@@ -129,9 +129,8 @@ async function placeToTrail(
     // Prefer highest-resolution photos first
     const sorted = [...photos].sort((a, b) => b.width * b.height - a.width * a.height);
 
-    // Rotate starting index by placeId hash to avoid repeating the same first photo across places
-    const hash = Array.from(place.place_id).reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const startOffset = (hash + index) % sorted.length;
+    // Start hero search at an index based on list order to increase variation
+    const startOffset = (index * 2) % sorted.length;
 
     // Pick a hero photo that hasn't been used yet across the page
     let heroRef: string | null = null;
